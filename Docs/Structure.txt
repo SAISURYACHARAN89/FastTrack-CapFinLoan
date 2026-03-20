@@ -1,0 +1,221 @@
+1. Basic structure of the Application
+
+CapFinLoan/
+│
+├── Backend/
+│   │
+│   ├── AuthService/
+│   │   └── CapFinLoan.AuthService.sln
+│   │
+│   ├── ApplicationService/
+│   │   └── CapFinLoan.ApplicationService.sln
+│   │
+│   ├── DocumentService/
+│   │   └── CapFinLoan.DocumentService.sln
+│   │
+│   ├── AdminService/
+│   │   └── CapFinLoan.AdminService.sln
+│   │
+│   ├── ApiGateway/
+│   │   └── CapFinLoan.Gateway.sln
+│   │
+│   └── SharedKernel/
+│       ├── Enums/
+│       ├── DTOs/
+│       └── Constants/
+│
+├── Frontend/
+│   └── AngularApp/
+│
+├── Docs/
+└── README.md
+
+
+2.  Structure of every Microservice
+
+CapFinLoan.AuthService.sln
+│
+├── CapFinLoan.Auth.API              → Controllers
+├── CapFinLoan.Auth.Application      → Business logic
+├── CapFinLoan.Auth.Domain           → Entities
+├── CapFinLoan.Auth.Infrastructure   → JWT, external logic
+├── CapFinLoan.Auth.Persistence      → EF Core, DB
+
+
+3. Overall project structure
+
+CapFinLoan/
+│
+├── Backend/
+│   │
+│   ├── AuthService/
+│   │   └── CapFinLoan.AuthService.sln
+│   │       │
+│   │       ├── CapFinLoan.Auth.API/
+│   │       │   ├── Controllers/
+│   │       │   │   └── AuthController.cs
+│   │       │   ├── Middleware/
+│   │       │   │   └── ExceptionMiddleware.cs
+│   │       │   ├── Extensions/
+│   │       │   │   └── ServiceExtensions.cs
+│   │       │   ├── Program.cs
+│   │       │   └── appsettings.json
+│   │       │
+│   │       ├── CapFinLoan.Auth.Application/
+│   │       │   ├── DTOs/
+│   │       │   │   ├── LoginDto.cs
+│   │       │   │   ├── RegisterDto.cs
+│   │       │   │   └── AuthResponseDto.cs
+│   │       │   ├── Interfaces/
+│   │       │   │   └── IAuthService.cs
+│   │       │   ├── Services/
+│   │       │   │   └── AuthService.cs
+│   │       │   └── Common/
+│   │       │       └── ApiResponse.cs
+│   │       │
+│   │       ├── CapFinLoan.Auth.Domain/
+│   │       │   ├── Models/
+│   │       │   │   └── User.cs
+│   │       │   └── Enums/
+│   │       │       └── UserRole.cs
+│   │       │
+│   │       ├── CapFinLoan.Auth.Infrastructure/
+│   │       │   └── Services/
+│   │       │       └── JwtService.cs
+│   │       │
+│   │       └── CapFinLoan.Auth.Persistence/
+│   │           ├── Data/
+│   │           │   └── AuthDbContext.cs
+│   │           ├── Repositories/
+│   │           │   └── UserRepository.cs
+│   │           └── Migrations/
+│   │
+│   ├── ApplicationService/
+│   │   └── CapFinLoan.ApplicationService.sln
+│   │       │
+│   │       ├── CapFinLoan.Application.API/
+│   │       │   ├── Controllers/
+│   │       │   │   └── ApplicationController.cs
+│   │       │   ├── Middleware/
+│   │       │   ├── Extensions/
+│   │       │   ├── Program.cs
+│   │       │   └── appsettings.json
+│   │       │
+│   │       ├── CapFinLoan.Application.Application/
+│   │       │   ├── DTOs/
+│   │       │   │   ├── CreateApplicationDto.cs
+│   │       │   │   ├── UpdateApplicationDto.cs
+│   │       │   │   └── ApplicationStatusDto.cs
+│   │       │   ├── Interfaces/
+│   │       │   │   └── IApplicationService.cs
+│   │       │   ├── Services/
+│   │       │   │   └── ApplicationService.cs
+│   │       │   └── Common/
+│   │       │       └── ApiResponse.cs
+│   │       │
+│   │       ├── CapFinLoan.Application.Domain/
+│   │       │   ├── Models/
+│   │       │   │   └── LoanApplication.cs
+│   │       │   └── Enums/
+│   │       │       └── ApplicationStatus.cs
+│   │       │
+│   │       ├── CapFinLoan.Application.Infrastructure/
+│   │       │
+│   │       └── CapFinLoan.Application.Persistence/
+│   │           ├── Data/
+│   │           │   └── ApplicationDbContext.cs
+│   │           ├── Repositories/
+│   │           │   └── ApplicationRepository.cs
+│   │           └── Migrations/
+│   │
+│   ├── DocumentService/
+│   │   └── CapFinLoan.DocumentService.sln
+│   │       │
+│   │       ├── CapFinLoan.Document.API/
+│   │       │   ├── Controllers/
+│   │       │   │   └── DocumentController.cs
+│   │       │   ├── Middleware/
+│   │       │   ├── Extensions/
+│   │       │   ├── Program.cs
+│   │       │   └── appsettings.json
+│   │       │
+│   │       ├── CapFinLoan.Document.Application/
+│   │       │   ├── DTOs/
+│   │       │   │   └── UploadDocumentDto.cs
+│   │       │   ├── Interfaces/
+│   │       │   │   └── IDocumentService.cs
+│   │       │   ├── Services/
+│   │       │   │   └── DocumentService.cs
+│   │       │   └── Common/
+│   │       │       └── ApiResponse.cs
+│   │       │
+│   │       ├── CapFinLoan.Document.Domain/
+│   │       │   └── Models/
+│   │       │       └── Document.cs
+│   │       │
+│   │       ├── CapFinLoan.Document.Infrastructure/
+│   │       │   └── Services/
+│   │       │       └── FileStorageService.cs
+│   │       │
+│   │       └── CapFinLoan.Document.Persistence/
+│   │           ├── Data/
+│   │           │   └── DocumentDbContext.cs
+│   │           └── Migrations/
+│   │
+│   ├── AdminService/
+│   │   └── CapFinLoan.AdminService.sln
+│   │       │
+│   │       ├── CapFinLoan.Admin.API/
+│   │       │   ├── Controllers/
+│   │       │   │   ├── AdminController.cs
+│   │       │   │   └── ReportsController.cs
+│   │       │   ├── Middleware/
+│   │       │   ├── Extensions/
+│   │       │   ├── Program.cs
+│   │       │   └── appsettings.json
+│   │       │
+│   │       ├── CapFinLoan.Admin.Application/
+│   │       │   ├── DTOs/
+│   │       │   │   └── DecisionDto.cs
+│   │       │   ├── Interfaces/
+│   │       │   │   └── IAdminService.cs
+│   │       │   ├── Services/
+│   │       │   │   └── AdminService.cs
+│   │       │   └── Common/
+│   │       │       └── ApiResponse.cs
+│   │       │
+│   │       ├── CapFinLoan.Admin.Domain/
+│   │       │   └── Models/
+│   │       │       └── Decision.cs
+│   │       │
+│   │       ├── CapFinLoan.Admin.Infrastructure/
+│   │       │
+│   │       └── CapFinLoan.Admin.Persistence/
+│   │           ├── Data/
+│   │           │   └── AdminDbContext.cs
+│   │           └── Migrations/
+│   │
+│   ├── ApiGateway/
+│   │   └── CapFinLoan.Gateway.sln
+│   │       │
+│   │       └── CapFinLoan.Gateway.API/
+│   │           ├── Program.cs
+│   │           ├── ocelot.json
+│   │           └── appsettings.json
+│   │
+│   └── SharedKernel/
+│       ├── Enums/
+│       │   └── ApplicationStatus.cs
+│       ├── DTOs/
+│       │   └── ApiResponse.cs
+│       └── Constants/
+│           └── Roles.cs
+│
+├── Frontend/
+│   └── AngularApp/
+│   └── ReactApp/ 
+│
+├── Docs/
+│   └── SystemRules.md
+│
+└── README.md

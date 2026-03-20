@@ -1,0 +1,70 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.pdb
+*.cache
+*.log
+*.vs/
+*.db
+*.DS_Store
+*.ncrunch*
+*.vscode/
+*.TestResults/
+*.coverage
+*.coveragexml
+*.codecov
+*.resharper/
+*.idea/
+*.sln.docstates
+
+# Angular
+node_modules/
+dist/
+build/
+*.env
+*.angular/
+
+# General
+*.swp
+*.bak
+*.tmp
+*.~
+Thumbs.db
+.DS_Store
+.env
+.env.*
+
+# Ignore local settings
+appsettings.*.json
+!appsettings.json
+
+# Ignore logs
+logs/
+*.log
+
+# Ignore test output
+coverage/
+TestResults/
+
+# Ignore database files
+*.mdf
+*.ldf
+
+# Ignore IDE folders
+.vscode/
+.idea/
+
+# Ignore Docker artifacts
+docker-compose.override.yml
+
+# Ignore SonarQube
+.sonar/
+.sonarqube/
+
+# Ignore npm audit logs
+npm-debug.log*
+
+# Ignore temporary files
+~$*
