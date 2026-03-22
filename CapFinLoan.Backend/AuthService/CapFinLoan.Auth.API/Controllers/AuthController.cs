@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using CapFinLoan.Auth.Application.Services;
 using CapFinLoan.Auth.Application.DTOs;
+using CapFinLoan.Auth.Application.Exceptions;
 
 namespace CapFinLoan.Auth.API.Controllers;
 
@@ -16,20 +17,27 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("signup")]
-    public IActionResult Signup(SignupDto dto)
+    public async Task<ActionResult<UserDto>> Signup([FromBody] SignupDto dto, CancellationToken cancellationToken)
     {
-        var user = _service.Signup(dto);
-        return Ok(user);
+        try
+        {
+            var user = await _service.SignupAsync(dto, cancellationToken);
+            return Ok(user);
+        }
+        catch (EmailAlreadyExistsException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     [HttpPost("login")]
-    public IActionResult Login(LoginDto dto)
+    public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto dto, CancellationToken cancellationToken)
     {
-        var user = _service.Login(dto);
+        var auth = await _service.LoginAsync(dto, cancellationToken);
 
-        if (user == null)
+        if (auth == null)
             return Unauthorized();
 
-        return Ok(user);
+        return Ok(auth);
     }
 }

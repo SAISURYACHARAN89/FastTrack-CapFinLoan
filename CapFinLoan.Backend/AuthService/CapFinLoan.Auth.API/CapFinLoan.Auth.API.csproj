@@ -17,11 +17,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.5" />
     
   </ItemGroup>
   <ItemGroup>
   <ProjectReference Include="..\CapFinLoan.Auth.Application\CapFinLoan.Auth.Application.csproj" />
+  <ProjectReference Include="..\CapFinLoan.Auth.Infrastructure\CapFinLoan.Auth.Infrastructure.csproj" />
   <ProjectReference Include="..\CapFinLoan.Auth.Persistence\CapFinLoan.Auth.Persistence.csproj" />
 </ItemGroup>
 </Project>

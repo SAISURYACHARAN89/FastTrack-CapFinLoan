@@ -6,7 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+  </ItemGroup>
+  <ItemGroup>
   <ProjectReference Include="..\CapFinLoan.Auth.Domain\CapFinLoan.Auth.Domain.csproj" />
-  <ProjectReference Include="..\CapFinLoan.Auth.Persistence\CapFinLoan.Auth.Persistence.csproj" />
 </ItemGroup>
 </Project>
