@@ -1,12 +1,74 @@
+using System.Text;
+using CapFinLoan.Document.Application.Interfaces;
+using CapFinLoan.Document.Application.Services;
+using CapFinLoan.Document.Infrastructure.Options;
+using CapFinLoan.Document.Infrastructure.Services;
+using CapFinLoan.Document.Persistence;
+using CapFinLoan.Document.Persistence.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
 
+builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection("Uploads"));
+
+builder.Services.AddDbContext<DocumentDbContext>(opt =>
+    opt.UseSqlServer(
+        builder.Configuration.GetConnectionString("Default")
+    ));
+
+builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
+builder.Services.AddScoped<IDocumentFileStorage, LocalDocumentFileStorage>();
+builder.Services.AddScoped<DocumentService>();
+
+var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException("JWT Key is not configured (Jwt:Key).");
+if (string.IsNullOrWhiteSpace(jwtIssuer))
+    throw new InvalidOperationException("JWT Issuer is not configured (Jwt:Issuer).");
+if (string.IsNullOrWhiteSpace(jwtAudience))
+    throw new InvalidOperationException("JWT Audience is not configured (Jwt:Audience).");
+if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+    throw new InvalidOperationException("JWT Key is too short for HS256. Use at least 32 bytes (256 bits) for Jwt:Key.");
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30)
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
