@@ -1,13 +1,12 @@
-namespace CapFinLoan.Application.Application.DTOs;
+namespace CapFinLoan.Admin.Application.DTOs;
 
-public class ApplicationDto
+public class ApplicationQueueDto
 {
     public int Id { get; set; }
     public int UserId { get; set; }
     public decimal Amount { get; set; }
     public int TenureMonths { get; set; }
     public string Status { get; set; } = string.Empty;
-    public string? DecisionReason { get; set; }
-    public DateTime? DecidedAtUtc { get; set; }
     public DateTime CreatedAt { get; set; }
+    public int DocumentCount { get; set; }
 }

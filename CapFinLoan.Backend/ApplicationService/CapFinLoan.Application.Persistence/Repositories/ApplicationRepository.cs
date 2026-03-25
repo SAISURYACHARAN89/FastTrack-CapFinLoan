@@ -36,11 +36,24 @@ public sealed class ApplicationRepository : IApplicationRepository
             .FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId, cancellationToken);
     }
 
+    public Task<LoanApplication?> GetByIdForUpdateAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return _db.LoanApplications.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<LoanApplication>> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         return await _db.LoanApplications
             .AsNoTracking()
             .Where(x => x.UserId == userId)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<LoanApplication>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _db.LoanApplications
+            .AsNoTracking()
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
     }

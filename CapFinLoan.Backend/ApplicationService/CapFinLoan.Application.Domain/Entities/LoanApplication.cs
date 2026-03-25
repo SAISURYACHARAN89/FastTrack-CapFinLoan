@@ -18,5 +18,10 @@ public class LoanApplication
     [MaxLength(50)]
     public string Status { get; set; } = "PENDING";
 
+    [MaxLength(500)]
+    public string? DecisionReason { get; set; }
+
+    public DateTime? DecidedAtUtc { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

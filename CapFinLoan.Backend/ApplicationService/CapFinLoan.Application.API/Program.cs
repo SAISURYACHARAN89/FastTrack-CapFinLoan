@@ -19,6 +19,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(opt =>
     ));
 
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
+builder.Services.AddScoped<IApplicationStatusHistoryRepository, ApplicationStatusHistoryRepository>();
 builder.Services.AddScoped<ApplicationService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];

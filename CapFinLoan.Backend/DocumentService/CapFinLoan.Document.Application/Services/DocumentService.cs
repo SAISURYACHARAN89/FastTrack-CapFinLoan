@@ -62,6 +62,44 @@ public sealed class DocumentService
         return Map(doc);
     }
 
+    public async Task<DocumentDto?> ReplaceAsync(
+        int userId,
+        int id,
+        string fileName,
+        string contentType,
+        long fileSize,
+        Stream fileStream,
+        CancellationToken cancellationToken = default)
+    {
+        if (fileSize <= 0)
+            throw new InvalidOperationException("File is empty.");
+
+        if (fileSize > MaxFileSizeBytes)
+            throw new InvalidOperationException("File is too large. Max allowed size is 5MB.");
+
+        if (!AllowedContentTypes.Contains(contentType))
+            throw new InvalidOperationException("Unsupported file type. Allowed: pdf, jpg, png.");
+
+        var doc = await _documents.GetByIdForUserForUpdateAsync(id, userId, cancellationToken);
+        if (doc == null)
+            return null;
+
+        var oldStoredFileName = doc.StoredFileName;
+        var storedFileName = await _storage.SaveAsync(fileStream, fileName, contentType, cancellationToken);
+
+        doc.FileName = fileName;
+        doc.StoredFileName = storedFileName;
+        doc.ContentType = contentType;
+        doc.FileSize = fileSize;
+        doc.Status = "PENDING";
+        doc.UploadedAt = DateTime.UtcNow;
+
+        await _documents.SaveChangesAsync(cancellationToken);
+
+        await _storage.DeleteAsync(oldStoredFileName, cancellationToken);
+        return Map(doc);
+    }
+
     public async Task<IReadOnlyList<DocumentDto>> GetByApplicationAsync(int userId, int applicationId, CancellationToken cancellationToken = default)
     {
         var docs = await _documents.GetByApplicationIdForUserAsync(applicationId, userId, cancellationToken);

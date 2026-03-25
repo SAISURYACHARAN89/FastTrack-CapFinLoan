@@ -53,6 +53,38 @@ public sealed class DocumentController : ControllerBase
         }
     }
 
+    [HttpPut("{id:int}")]
+    [RequestSizeLimit(RequestLimitBytes)]
+    public async Task<ActionResult<DocumentDto>> Replace([FromRoute] int id, [FromForm] ReplaceDocumentDto dto, CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
+        if (dto.File == null)
+            return BadRequest(new { message = "File is required." });
+
+        try
+        {
+            await using var stream = dto.File.OpenReadStream();
+            var safeFileName = Path.GetFileName(dto.File.FileName);
+
+            var updated = await _service.ReplaceAsync(
+                userId,
+                id,
+                safeFileName,
+                dto.File.ContentType,
+                dto.File.Length,
+                stream,
+                cancellationToken);
+
+            return updated == null ? NotFound() : Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("application/{applicationId:int}")]
     public async Task<ActionResult<IReadOnlyList<DocumentDto>>> GetByApplication([FromRoute] int applicationId, CancellationToken cancellationToken)
     {

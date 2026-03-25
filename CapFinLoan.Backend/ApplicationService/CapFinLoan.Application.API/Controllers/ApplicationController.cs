@@ -83,6 +83,37 @@ public sealed class ApplicationController : ControllerBase
         return Ok(apps);
     }
 
+    [HttpGet("queue")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<ActionResult<IReadOnlyList<ApplicationDto>>> Queue(CancellationToken cancellationToken)
+    {
+        var apps = await _service.GetAllApplicationsAsync(cancellationToken);
+        return Ok(apps);
+    }
+
+    [HttpGet("{id:int}/timeline")]
+    public async Task<ActionResult<IReadOnlyList<ApplicationStatusHistoryDto>>> Timeline([FromRoute] int id, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var timeline = await _service.GetTimelineAsync(userId, id, cancellationToken);
+        return timeline == null ? NotFound() : Ok(timeline);
+    }
+
+    [HttpPost("{id:int}/status")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<ActionResult<ApplicationDto>> SetStatusAsAdmin([FromRoute] int id, [FromBody] MakeDecisionDto dto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var updated = await _service.SetStatusAsAdminAsync(id, dto.Status, dto.Reason, cancellationToken);
+            return updated == null ? NotFound() : Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
     private int GetUserId()
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
