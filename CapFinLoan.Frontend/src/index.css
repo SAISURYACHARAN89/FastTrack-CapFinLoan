@@ -1,0 +1,286 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DARK THEME (default)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root, .dark {
+  --c-surface:                   #0f131d;
+  --c-surface-dim:               #0f131d;
+  --c-surface-bright:            #353944;
+  --c-surface-container-lowest:  #0a0e18;
+  --c-surface-container-low:     #171b26;
+  --c-surface-container:         #1c1f2a;
+  --c-surface-container-high:    #262a35;
+  --c-surface-container-highest: #313540;
+  --c-surface-variant:           #313540;
+  --c-surface-tint:              #c3c0ff;
+
+  --c-on-surface:                #dfe2f1;
+  --c-on-surface-variant:        #c7c4d8;
+  --c-inverse-surface:           #dfe2f1;
+  --c-inverse-on-surface:        #2c303b;
+
+  --c-outline:                   #918fa1;
+  --c-outline-variant:           #464555;
+
+  --c-primary:                   #c3c0ff;
+  --c-on-primary:                #1d00a5;
+  --c-primary-container:         #4f46e5;
+  --c-on-primary-container:      #dad7ff;
+  --c-primary-fixed:             #e2dfff;
+  --c-primary-fixed-dim:         #c3c0ff;
+  --c-on-primary-fixed:          #0f0069;
+  --c-on-primary-fixed-variant:  #3323cc;
+  --c-inverse-primary:           #4d44e3;
+
+  --c-secondary:                 #4cd7f6;
+  --c-on-secondary:              #003640;
+  --c-secondary-container:       #03b5d3;
+  --c-on-secondary-container:    #00424e;
+  --c-secondary-fixed:           #acedff;
+  --c-secondary-fixed-dim:       #4cd7f6;
+  --c-on-secondary-fixed:        #001f26;
+  --c-on-secondary-fixed-variant:#004e5c;
+
+  --c-tertiary:                  #ffb695;
+  --c-on-tertiary:               #571f00;
+  --c-tertiary-container:        #a44100;
+  --c-on-tertiary-container:     #ffd2be;
+  --c-tertiary-fixed:            #ffdbcc;
+  --c-tertiary-fixed-dim:        #ffb695;
+  --c-on-tertiary-fixed:         #351000;
+  --c-on-tertiary-fixed-variant: #7b2f00;
+
+  --c-error:                     #ffb4ab;
+  --c-on-error:                  #690005;
+  --c-error-container:           #93000a;
+  --c-on-error-container:        #ffdad6;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LIGHT THEME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.light {
+  --c-surface:                   #f5f5ff;
+  --c-surface-dim:               #dcdce8;
+  --c-surface-bright:            #f5f5ff;
+  --c-surface-container-lowest:  #ffffff;
+  --c-surface-container-low:     #ededf8;
+  --c-surface-container:         #e7e7f3;
+  --c-surface-container-high:    #e1e1ec;
+  --c-surface-container-highest: #d9d9e6;
+  --c-surface-variant:           #e1e0f0;
+  --c-surface-tint:              #4f46e5;
+
+  --c-on-surface:                #1b1b28;
+  --c-on-surface-variant:        #47464f;
+  --c-inverse-surface:           #303040;
+  --c-inverse-on-surface:        #f2f0ff;
+
+  --c-outline:                   #787680;
+  --c-outline-variant:           #c8c5d0;
+
+  --c-primary:                   #4f46e5;
+  --c-on-primary:                #ffffff;
+  --c-primary-container:         #e0dfff;
+  --c-on-primary-container:      #100093;
+  --c-primary-fixed:             #e2dfff;
+  --c-primary-fixed-dim:         #c3c0ff;
+  --c-on-primary-fixed:          #0f0069;
+  --c-on-primary-fixed-variant:  #3323cc;
+  --c-inverse-primary:           #c3c0ff;
+
+  --c-secondary:                 #006882;
+  --c-on-secondary:              #ffffff;
+  --c-secondary-container:       #bee9ff;
+  --c-on-secondary-container:    #001f28;
+  --c-secondary-fixed:           #bee9ff;
+  --c-secondary-fixed-dim:       #62d3f5;
+  --c-on-secondary-fixed:        #001f28;
+  --c-on-secondary-fixed-variant:#004d61;
+
+  --c-tertiary:                  #8c4a1f;
+  --c-on-tertiary:               #ffffff;
+  --c-tertiary-container:        #ffdbc8;
+  --c-on-tertiary-container:     #311200;
+  --c-tertiary-fixed:            #ffdbc8;
+  --c-tertiary-fixed-dim:        #ffb68c;
+  --c-on-tertiary-fixed:         #2e1100;
+  --c-on-tertiary-fixed-variant: #71340a;
+
+  --c-error:                     #ba1a1a;
+  --c-on-error:                  #ffffff;
+  --c-error-container:           #ffdad6;
+  --c-on-error-container:        #410002;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BASE STYLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@layer base {
+  body {
+    @apply bg-surface font-body text-on-surface flex min-h-screen w-full;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  ::selection {
+    background-color: rgba(79, 70, 229, 0.3);
+  }
+  .light ::selection {
+    background-color: rgba(79, 70, 229, 0.2);
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DARK MODE — Remove harsh white borders
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root, .dark {
+  /* Make white/5 and white/10 borders invisible — use outline-variant instead */
+  --tw-border-opacity: 1;
+}
+
+/* Any element using border-white with opacity → fully transparent, no visible line */
+.dark [class~="border-white\/5"],
+[class~="border-white\/5"] {
+  border-color: transparent !important;
+}
+.dark [class~="border-white\/10"],
+[class~="border-white\/10"] {
+  border-color: transparent !important;
+}
+
+/* divide (table rows / list separators) */
+.dark .divide-white\/5 > * + * {
+  border-color: transparent !important;
+}
+
+/* hover white backgrounds in dark mode — keep subtle */
+.dark [class~="hover\:bg-white\/5"]:hover,
+[class~="hover\:bg-white\/5"]:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LIGHT MODE — fix visibility & contrast
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Borders: white-alpha → soft primary-tinted border */
+.light [class~="border-white\/5"],
+.light [class~="border-white\/10"],
+.light [class~="border-white\/0"] {
+  border-color: rgba(79, 70, 229, 0.1) !important;
+}
+
+/* Dividers */
+.light .divide-white\/5 > * + * {
+  border-color: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* White-alpha backgrounds → primary-tinted */
+.light [class~="hover\:bg-white\/5"]:hover,
+.light [class~="hover\:bg-white\/10"]:hover {
+  background-color: rgba(79, 70, 229, 0.06) !important;
+}
+
+/* Slate text colors — boost contrast in light mode */
+.light .text-slate-400 { color: #4b5563 !important; }
+.light .text-slate-500 { color: #374151 !important; }
+.light .text-slate-600 { color: #1f2937 !important; }
+.light .text-slate-700 { color: #111827 !important; }
+
+/* Sidebar & panel backgrounds */
+.light aside {
+  box-shadow: 1px 0 0 0 rgba(79, 70, 229, 0.1), 4px 0 16px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Active sidebar nav link — indigo-400 is too light on light bg */
+.light .text-indigo-400 { color: #4338ca !important; }
+.light .border-indigo-500 { border-color: #4338ca !important; }
+.light .from-indigo-500\/10 { --tw-gradient-from: rgba(67,56,202,0.12) !important; }
+
+/* Surface overlays with white-alpha tint don't work in light mode */
+.light .bg-surface-container-lowest\/50 { background-color: var(--c-surface-container-lowest) !important; }
+.light .bg-surface-container-lowest\/60 { background-color: var(--c-surface-container-lowest) !important; }
+.light .bg-surface-container-low\/40   { background-color: var(--c-surface-container-low) !important; }
+.light .bg-surface-container\/20       { background-color: var(--c-surface-container) !important; }
+.light .bg-surface-container\/30       { background-color: var(--c-surface-container) !important; }
+.light .bg-surface-container\/40       { background-color: var(--c-surface-container) !important; }
+
+/* Table header bg in light mode */
+.light .bg-surface-container-lowest\/30 { background-color: var(--c-surface-container-lowest) !important; }
+
+/* Black-alpha overlays → look wrong in light mode, remove */
+.light .bg-black\/30 { background-color: rgba(0,0,0,0.04) !important; }
+.light .bg-black\/80 { background-color: rgba(0,0,0,0.5) !important; }
+
+/* Opacity classes that make text too faint in light */
+.light .opacity-60 { opacity: 0.75 !important; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   VIEW TRANSITIONS RIPPLE ANIMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* The new (incoming) snapshot expands as a circle from the toggle position */
+::view-transition-new(root) {
+  clip-path: circle(0% at var(--ripple-x, 50%) var(--ripple-y, 50%));
+  animation: theme-ripple 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes theme-ripple {
+  from {
+    clip-path: circle(0% at var(--ripple-x, 50%) var(--ripple-y, 50%));
+  }
+  to {
+    clip-path: circle(150% at var(--ripple-x, 50%) var(--ripple-y, 50%));
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   THEME TOGGLE BUTTON ANIMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.theme-icon-enter {
+  animation: spin-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes spin-pop-in {
+  from { transform: rotate(-90deg) scale(0.5); opacity: 0; }
+  to   { transform: rotate(0deg)   scale(1);   opacity: 1; }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   UTILITIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@layer utilities {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .mesh-gradient-bg {
+    background-color: var(--c-surface);
+    background-image:
+        radial-gradient(at 0% 0%,   hsla(243, 75%, 59%, 0.15) 0, transparent 50%),
+        radial-gradient(at 50% 0%,  hsla(188, 91%, 42%, 0.10) 0, transparent 50%),
+        radial-gradient(at 100% 0%, hsla(243, 75%, 59%, 0.15) 0, transparent 50%),
+        radial-gradient(at 0% 100%, hsla(188, 91%, 42%, 0.10) 0, transparent 50%),
+        radial-gradient(at 100% 100%, hsla(243, 75%, 59%, 0.15) 0, transparent 50%);
+  }
+  .glass-panel {
+    background: rgba(23, 27, 38, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(223, 226, 241, 0.05);
+  }
+  .light .glass-panel {
+    background: rgba(237, 237, 248, 0.7);
+    border: 1px solid rgba(79, 70, 229, 0.1);
+  }
+}

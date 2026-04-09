@@ -38,14 +38,7 @@ public class AuthService
         await _users.AddAsync(user, cancellationToken);
         await _users.SaveChangesAsync(cancellationToken);
 
-        return new UserDto
-        {
-            Id = user.Id,
-            Name = user.Name,
-            Email = user.Email,
-            Role = user.Role,
-            IsActive = user.IsActive
-        };
+        return Map(user);
     }
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto, CancellationToken cancellationToken = default)
@@ -84,6 +77,81 @@ public class AuthService
             Name = user.Name,
             Email = user.Email,
             Role = user.Role
+        };
+    }
+
+    public async Task<UserDto?> GetProfileAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(userId, cancellationToken);
+        return user == null ? null : Map(user);
+    }
+
+    public async Task<UserDto?> UpdateProfileAsync(int userId, UpdateProfileDto dto, CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdForUpdateAsync(userId, cancellationToken);
+        if (user == null)
+            return null;
+
+        user.MobileNumber = dto.MobileNumber.Trim();
+        user.Address = dto.Address.Trim();
+        user.DateOfBirth = DateTime.SpecifyKind(dto.DateOfBirth.Date, DateTimeKind.Utc);
+        user.EmploymentStatus = dto.EmploymentStatus.Trim().ToUpperInvariant();
+        user.BankName = dto.BankName.Trim();
+        user.BankAccountNumber = dto.BankAccountNumber.Trim();
+        user.IfscCode = dto.IfscCode.Trim().ToUpperInvariant();
+        user.AnnualIncome = dto.AnnualIncome;
+        user.ProfilePhotoDataUrl = dto.ProfilePhotoDataUrl.Trim();
+
+        await _users.SaveChangesAsync(cancellationToken);
+        return Map(user);
+    }
+
+    public async Task<IReadOnlyList<UserIdentifierDto>> GetUserIdentifiersAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default)
+    {
+        var users = await _users.GetByIdsAsync(userIds, cancellationToken);
+        return users
+            .Select(u => new UserIdentifierDto
+            {
+                UserId = u.Id,
+                Name = u.Name,
+                MobileNumber = u.MobileNumber,
+                BankName = u.BankName,
+                EmploymentStatus = u.EmploymentStatus
+            })
+            .ToArray();
+    }
+
+    private static UserDto Map(User user)
+    {
+        var isProfileComplete =
+            !string.IsNullOrWhiteSpace(user.MobileNumber) &&
+            !string.IsNullOrWhiteSpace(user.Address) &&
+            user.DateOfBirth.HasValue &&
+            !string.IsNullOrWhiteSpace(user.EmploymentStatus) &&
+            !string.IsNullOrWhiteSpace(user.BankName) &&
+            !string.IsNullOrWhiteSpace(user.BankAccountNumber) &&
+            !string.IsNullOrWhiteSpace(user.IfscCode) &&
+            user.AnnualIncome.HasValue &&
+            user.AnnualIncome.Value > 0 &&
+            !string.IsNullOrWhiteSpace(user.ProfilePhotoDataUrl);
+
+        return new UserDto
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Role = user.Role,
+            IsActive = user.IsActive,
+            MobileNumber = user.MobileNumber,
+            Address = user.Address,
+            DateOfBirth = user.DateOfBirth,
+            EmploymentStatus = user.EmploymentStatus,
+            BankName = user.BankName,
+            BankAccountNumber = user.BankAccountNumber,
+            IfscCode = user.IfscCode,
+            AnnualIncome = user.AnnualIncome,
+            ProfilePhotoDataUrl = user.ProfilePhotoDataUrl,
+            IsProfileComplete = isProfileComplete
         };
     }
 }

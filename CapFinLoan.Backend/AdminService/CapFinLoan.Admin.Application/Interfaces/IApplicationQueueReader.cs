@@ -12,14 +12,29 @@ public class ApplicationQueueSummary
 }
 
 /// <summary>
-/// Read-only interface to fetch application queue and status from ApplicationService context.
-/// In production, this would call external ApplicationService via HTTP; for now we'll simulate with DB context.
+/// Interface to communicate with ApplicationService and DocumentService via HTTP.
 /// </summary>
 public interface IApplicationQueueReader
 {
+    // ── Read operations ──────────────────────────────────────────────────────
     Task<IReadOnlyList<ApplicationQueueSummary>> GetQueueAsync(string? bearerToken = null, CancellationToken cancellationToken = default);
 
     Task<ApplicationQueueSummary?> GetApplicationAsync(int applicationId, string? bearerToken = null, CancellationToken cancellationToken = default);
 
     Task<int> GetApplicationDocumentCountAsync(int applicationId, string? bearerToken = null, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the current status string of an application from ApplicationService.</summary>
+    Task<string?> GetApplicationStatusAsync(int applicationId, string? bearerToken = null, CancellationToken cancellationToken = default);
+
+    // ── Write operations ─────────────────────────────────────────────────────
+    /// <summary>
+    /// Calls ApplicationService POST /applications/{id}/status to sync the admin decision.
+    /// Returns false if the call fails (non-fatal; decision is already persisted locally).
+    /// </summary>
+    Task<bool> UpdateApplicationStatusAsync(int applicationId, string status, string? reason, string? bearerToken = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Calls DocumentService PUT /documents/{id}/verify-status to update document verification state.
+    /// </summary>
+    Task<bool> UpdateDocumentStatusAsync(int documentId, string status, string? bearerToken = null, CancellationToken cancellationToken = default);
 }

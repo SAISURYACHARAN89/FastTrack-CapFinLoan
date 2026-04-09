@@ -1,0 +1,157 @@
+services:
+  auth-api:
+    build:
+      context: ./CapFinLoan.Backend
+      dockerfile: AuthService/CapFinLoan.Auth.API/Dockerfile
+    container_name: capfin-auth-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Server=host.docker.internal,1433;Database=CapFinLoanAuth;User Id=sa;Password=Password@123;TrustServerCertificate=True
+      Jwt__Key: THIS_IS_SECRET_KEY_123456789_ABCDEF_123456
+      Jwt__Issuer: CapFinLoan.Auth
+      Jwt__Audience: CapFinLoan.Client
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5000:8080"
+
+  application-api:
+    build:
+      context: ./CapFinLoan.Backend
+      dockerfile: ApplicationService/CapFinLoan.Application.API/Dockerfile
+    container_name: capfin-application-api
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      auth-api:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Server=host.docker.internal,1433;Database=CapFinLoanApplication;User Id=sa;Password=Password@123;TrustServerCertificate=True
+      Jwt__Key: THIS_IS_SECRET_KEY_123456789_ABCDEF_123456
+      Jwt__Issuer: CapFinLoan.Auth
+      Jwt__Audience: CapFinLoan.Client
+      Services__Auth__BaseUrl: http://auth-api:8080
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: guest
+      RabbitMq__Password: guest
+      RabbitMq__VirtualHost: /
+      RabbitMq__ExchangeName: capfinloan.events
+      RabbitMq__ApplicationSubmittedRoutingKey: application.submitted
+      RabbitMq__AdminDecisionMadeRoutingKey: admin.decision.made
+      RabbitMq__AdminDecisionQueue: application.admin.decision.queue
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5001:8080"
+
+  document-api:
+    build:
+      context: ./CapFinLoan.Backend
+      dockerfile: DocumentService/CapFinLoan.Document.API/Dockerfile
+    container_name: capfin-document-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Server=host.docker.internal,1433;Database=CapFinLoanDocument;User Id=sa;Password=Password@123;TrustServerCertificate=True
+      Jwt__Key: THIS_IS_SECRET_KEY_123456789_ABCDEF_123456
+      Jwt__Issuer: CapFinLoan.Auth
+      Jwt__Audience: CapFinLoan.Client
+      Uploads__RelativePath: uploads
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: guest
+      RabbitMq__Password: guest
+      RabbitMq__VirtualHost: /
+      RabbitMq__ExchangeName: capfinloan.events
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5002:8080"
+    volumes:
+      - capfin_document_uploads:/app/uploads
+
+  admin-api:
+    build:
+      context: ./CapFinLoan.Backend
+      dockerfile: AdminService/CapFinLoan.Admin.API/Dockerfile
+    container_name: capfin-admin-api
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      application-api:
+        condition: service_started
+      document-api:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Server=host.docker.internal,1433;Database=CapFinLoanAdmin;User Id=sa;Password=Password@123;Encrypt=false;TrustServerCertificate=true;
+      Jwt__Key: THIS_IS_SECRET_KEY_123456789_ABCDEF_123456
+      Jwt__Issuer: CapFinLoan.Auth
+      Jwt__Audience: CapFinLoan.Client
+      ServiceUrls__ApplicationService: http://application-api:8080
+      ServiceUrls__DocumentService: http://document-api:8080
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: guest
+      RabbitMq__Password: guest
+      RabbitMq__VirtualHost: /
+      RabbitMq__ExchangeName: capfinloan.events
+      RabbitMq__ApplicationSubmittedRoutingKey: application.submitted
+      RabbitMq__ApplicationSubmittedQueue: admin.application.submitted.queue
+      RabbitMq__AdminDecisionMadeRoutingKey: admin.decision.made
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5003:8080"
+
+  gateway-api:
+    build:
+      context: ./CapFinLoan.Backend
+      dockerfile: ApiGateway/CapFinLoan.Gateway.API/Dockerfile
+    container_name: capfin-gateway-api
+    depends_on:
+      auth-api:
+        condition: service_started
+      application-api:
+        condition: service_started
+      document-api:
+        condition: service_started
+      admin-api:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      Jwt__Key: THIS_IS_SECRET_KEY_123456789_ABCDEF_123456
+      Jwt__Issuer: CapFinLoan.Auth
+      Jwt__Audience: CapFinLoan.Client
+    ports:
+      - "5021:8080"
+
+  frontend:
+    build:
+      context: ./CapFinLoan.Frontend
+      dockerfile: Dockerfile
+    container_name: capfin-frontend
+    depends_on:
+      gateway-api:
+        condition: service_started
+    ports:
+      - "5173:80"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: capfin-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - capfin_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  capfin_rabbitmq_data:
+  capfin_document_uploads:

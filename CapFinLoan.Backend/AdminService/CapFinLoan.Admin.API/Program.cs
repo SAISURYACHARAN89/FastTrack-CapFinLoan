@@ -1,4 +1,5 @@
 using System.Text;
+using CapFinLoan.Admin.API.Messaging;
 using CapFinLoan.Admin.Application.Interfaces;
 using CapFinLoan.Admin.Application.Services;
 using CapFinLoan.Admin.Persistence;
@@ -9,22 +10,23 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
 
 builder.Services.AddDbContext<AdminDbContext>(opt =>
-    opt.UseSqlServer(
-        builder.Configuration.GetConnectionString("Default")
-    ));
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<IAdminDecisionRepository, AdminDecisionRepository>();
 builder.Services.AddScoped<IAdminHistoryRepository, AdminHistoryRepository>();
 builder.Services.AddScoped<IApplicationQueueReader, ApplicationQueueReader>();
+builder.Services.AddSingleton<IAdminEventPublisher, RabbitMqAdminEventPublisher>();
 builder.Services.AddScoped<AdminService>();
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
+builder.Services.AddHostedService<ApplicationSubmittedConsumer>();
+builder.Services.AddHostedService<DocumentLifecycleConsumer>();
 
 builder.Services.AddHttpContextAccessor();
 
+// Named HTTP clients — used by ApplicationQueueReader via IHttpClientFactory (fixes C1)
 builder.Services.AddHttpClient("application", c =>
 {
     c.BaseAddress = new Uri(builder.Configuration["ServiceUrls:ApplicationService"] ?? "http://localhost:5256");
@@ -46,7 +48,7 @@ if (string.IsNullOrWhiteSpace(jwtIssuer))
 if (string.IsNullOrWhiteSpace(jwtAudience))
     throw new InvalidOperationException("JWT Audience is not configured (Jwt:Audience).");
 if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
-    throw new InvalidOperationException("JWT Key is too short for HS256. Use at least 32 bytes (256 bits) for Jwt:Key.");
+    throw new InvalidOperationException("JWT Key is too short for HS256. Use at least 32 bytes.");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -66,13 +68,16 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// M6: Global error handling
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 app.UseSwagger();
 app.UseSwaggerUI();

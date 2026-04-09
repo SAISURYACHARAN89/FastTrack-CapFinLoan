@@ -13,4 +13,7 @@ public interface IDocumentRepository
     // Owner-scoped helpers (required for secure access)
     Task<DocumentEntity?> GetByIdForUserForUpdateAsync(int id, int userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<DocumentEntity>> GetByApplicationIdForUserAsync(int applicationId, int userId, CancellationToken cancellationToken = default);
+
+    // Admin-scoped (no owner check — only for privileged operations)
+    Task<DocumentEntity?> GetByIdForUpdateAsync(int id, CancellationToken cancellationToken = default);
 }

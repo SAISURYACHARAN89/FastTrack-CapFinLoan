@@ -1,4 +1,5 @@
 using System.Text;
+using CapFinLoan.Document.API.Messaging;
 using CapFinLoan.Document.Application.Interfaces;
 using CapFinLoan.Document.Application.Services;
 using CapFinLoan.Document.Infrastructure.Options;
@@ -11,19 +12,17 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
 
 builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection("Uploads"));
 
 builder.Services.AddDbContext<DocumentDbContext>(opt =>
-    opt.UseSqlServer(
-        builder.Configuration.GetConnectionString("Default")
-    ));
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IDocumentFileStorage, LocalDocumentFileStorage>();
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
+builder.Services.AddSingleton<IDocumentEventPublisher, RabbitMqDocumentEventPublisher>();
 builder.Services.AddScoped<DocumentService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -37,7 +36,7 @@ if (string.IsNullOrWhiteSpace(jwtIssuer))
 if (string.IsNullOrWhiteSpace(jwtAudience))
     throw new InvalidOperationException("JWT Audience is not configured (Jwt:Audience).");
 if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
-    throw new InvalidOperationException("JWT Key is too short for HS256. Use at least 32 bytes (256 bits) for Jwt:Key.");
+    throw new InvalidOperationException("JWT Key is too short for HS256. Use at least 32 bytes.");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -57,19 +56,21 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// M6: Global error handling
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers();

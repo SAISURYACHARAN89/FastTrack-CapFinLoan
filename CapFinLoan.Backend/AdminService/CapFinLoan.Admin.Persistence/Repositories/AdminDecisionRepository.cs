@@ -43,6 +43,14 @@ public sealed class AdminDecisionRepository : IAdminDecisionRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<AdminDecision>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _db.AdminDecisions
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return _db.SaveChangesAsync(cancellationToken);

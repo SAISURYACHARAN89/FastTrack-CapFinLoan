@@ -7,4 +7,5 @@ public sealed class DocumentDto
     public string FileName { get; init; } = string.Empty;
     public string Status { get; init; } = string.Empty;
     public DateTime UploadedAt { get; init; }
+    public string DocumentType { get; init; } = string.Empty;
 }

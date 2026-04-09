@@ -18,15 +18,13 @@ public sealed class AdminController : ControllerBase
         _service = service;
     }
 
-    /// <summary>
-    /// Get queue of all applications for admin review.
-    /// </summary>
+    /// <summary>Get queue of all applications for admin review.</summary>
     [HttpGet("applications")]
     public async Task<ActionResult<IReadOnlyList<ApplicationQueueDto>>> GetQueue(CancellationToken cancellationToken)
     {
         try
         {
-            var bearerToken = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            var bearerToken = GetBearerToken();
             var queue = await _service.GetQueueAsync(bearerToken, cancellationToken);
             return Ok(queue);
         }
@@ -37,8 +35,9 @@ public sealed class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Make a decision on an application (APPROVED, REJECTED, UNDER_REVIEW).
-    /// Requires admin role.
+    /// Make a decision (APPROVED, REJECTED, UNDER_REVIEW).
+    /// Fetches actual current status from ApplicationService, saves decision,
+    /// then syncs the status back to ApplicationService.
     /// </summary>
     [HttpPost("applications/{id:int}/decision")]
     public async Task<ActionResult<AdminDecisionDto>> MakeDecision(
@@ -51,12 +50,8 @@ public sealed class AdminController : ControllerBase
 
         try
         {
-            // In a real scenario, we'd fetch the current application status from ApplicationService
-            // For MVP, we default to the decision status
-            var currentStatus = "SUBMITTED";
-
-            var decision = await _service.MakeDecisionAsync(id, adminUserId, request, currentStatus, cancellationToken);
-
+            var bearerToken = GetBearerToken();
+            var decision = await _service.MakeDecisionAsync(id, adminUserId, request, bearerToken, cancellationToken);
             return Ok(decision);
         }
         catch (InvalidOperationException ex)
@@ -69,9 +64,7 @@ public sealed class AdminController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get status history (timeline) for an application.
-    /// </summary>
+    /// <summary>Get status history (timeline) for an application.</summary>
     [HttpGet("applications/{id:int}/history")]
     public async Task<ActionResult<IReadOnlyList<ApplicationStatusHistoryDto>>> GetHistory(
         [FromRoute] int id,
@@ -88,11 +81,8 @@ public sealed class AdminController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Verify a document (VERIFIED or REJECTED).
-    /// Simulated for now; calls DocumentService in production.
-    /// </summary>
-    [HttpPost("documents/{id:int}/verify")]
+    /// <summary>Verify a document (VERIFIED or REJECTED) — calls DocumentService via HTTP.</summary>
+    [HttpPut("documents/{id:int}/verify")]
     public async Task<IActionResult> VerifyDocument(
         [FromRoute] int id,
         [FromBody] VerifyDocumentRequestDto request,
@@ -103,8 +93,11 @@ public sealed class AdminController : ControllerBase
 
         try
         {
-            var verified = await _service.VerifyDocumentAsync(id, adminUserId, request, cancellationToken);
-            return verified ? Ok(new { message = "Document verified" }) : BadRequest(new { message = "Failed to verify document" });
+            var bearerToken = GetBearerToken();
+            var verified = await _service.VerifyDocumentAsync(id, adminUserId, request, bearerToken, cancellationToken);
+            return verified
+                ? Ok(new { message = "Document verified." })
+                : BadRequest(new { message = "DocumentService returned an error. Verify the document ID and status." });
         }
         catch (InvalidOperationException ex)
         {
@@ -116,15 +109,14 @@ public sealed class AdminController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Generate admin report summary (counts, totals, etc.)
-    /// </summary>
+    /// <summary>Generate admin report summary (counts, totals, etc.)</summary>
     [HttpGet("reports/summary")]
     public async Task<ActionResult<AdminReportSummaryDto>> GetReportSummary(CancellationToken cancellationToken)
     {
         try
         {
-            var report = await _service.GetReportSummaryAsync(cancellationToken);
+            var bearerToken = GetBearerToken();
+            var report = await _service.GetReportSummaryAsync(bearerToken, cancellationToken);
             return Ok(report);
         }
         catch (Exception ex)
@@ -133,9 +125,15 @@ public sealed class AdminController : ControllerBase
         }
     }
 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     private bool TryGetAdminUserId(out int userId)
     {
         var val = User.FindFirstValue(ClaimTypes.NameIdentifier);
         return int.TryParse(val, out userId) && userId > 0;
     }
+
+    /// <summary>Extracts the raw Authorization header value to forward to downstream services.</summary>
+    private string? GetBearerToken() =>
+        HttpContext.Request.Headers["Authorization"].FirstOrDefault();
 }

@@ -48,6 +48,11 @@ public sealed class DocumentRepository : IDocumentRepository
         return _db.Documents.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId, cancellationToken);
     }
 
+    public Task<DocumentEntity?> GetByIdForUpdateAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return _db.Documents.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<DocumentEntity>> GetByApplicationIdForUserAsync(int applicationId, int userId, CancellationToken cancellationToken = default)
     {
         return await _db.Documents

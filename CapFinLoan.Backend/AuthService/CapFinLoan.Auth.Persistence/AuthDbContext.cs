@@ -34,6 +34,27 @@ public class AuthDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
 
+            entity.Property(x => x.MobileNumber)
+                .HasMaxLength(20);
+
+            entity.Property(x => x.Address)
+                .HasMaxLength(500);
+
+            entity.Property(x => x.EmploymentStatus)
+                .HasMaxLength(50);
+
+            entity.Property(x => x.BankName)
+                .HasMaxLength(100);
+
+            entity.Property(x => x.BankAccountNumber)
+                .HasMaxLength(30);
+
+            entity.Property(x => x.IfscCode)
+                .HasMaxLength(20);
+
+            entity.Property(x => x.AnnualIncome)
+                .HasPrecision(18, 2);
+
             entity.HasIndex(x => x.Email).IsUnique();
         });
     }

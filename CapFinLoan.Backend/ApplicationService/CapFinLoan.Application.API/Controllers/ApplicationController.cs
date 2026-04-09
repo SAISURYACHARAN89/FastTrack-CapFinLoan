@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using CapFinLoan.Application.Application.DTOs;
 using CapFinLoan.Application.Application.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -12,16 +13,30 @@ namespace CapFinLoan.Application.API.Controllers;
 public sealed class ApplicationController : ControllerBase
 {
     private readonly ApplicationService _service;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public ApplicationController(ApplicationService service)
+    public ApplicationController(ApplicationService service, IHttpClientFactory httpClientFactory)
     {
         _service = service;
+        _httpClientFactory = httpClientFactory;
     }
 
     [HttpPost]
     public async Task<ActionResult<ApplicationDto>> Create([FromBody] CreateApplicationDto dto, CancellationToken cancellationToken)
     {
         var userId = GetUserId();
+
+        var authHeader = Request.Headers.Authorization.ToString();
+        if (string.IsNullOrWhiteSpace(authHeader))
+            return Unauthorized(new { message = "Missing authorization token." });
+
+        var profileCheck = await IsProfileCompleteAsync(authHeader, cancellationToken);
+        if (!profileCheck.Success)
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Unable to validate profile status. Please try again." });
+
+        if (!profileCheck.IsProfileComplete)
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Finish setting up your profile before creating an application." });
+
         var created = await _service.CreateAsync(userId, dto, cancellationToken);
         return Ok(created);
     }
@@ -49,7 +64,14 @@ public sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<ApplicationDto>> GetById([FromRoute] int id, CancellationToken cancellationToken)
     {
         var userId = GetUserId();
-        var app = await _service.GetByIdAsync(userId, id, cancellationToken);
+        var isAdmin = User.IsInRole("ADMIN");
+        ApplicationDto? app;
+
+        if (isAdmin)
+            app = await _service.GetByIdAsAdminAsync(id, cancellationToken);
+        else
+            app = await _service.GetByIdAsync(userId, id, cancellationToken);
+
         if (app == null)
             return NotFound();
 
@@ -121,5 +143,35 @@ public sealed class ApplicationController : ControllerBase
             throw new UnauthorizedAccessException("Invalid or missing user id claim.");
 
         return userId;
+    }
+
+    private async Task<(bool Success, bool IsProfileComplete)> IsProfileCompleteAsync(string authHeader, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient("AuthService");
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/auth/me");
+            request.Headers.TryAddWithoutValidation("Authorization", authHeader);
+
+            using var response = await client.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return (false, false);
+
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            var payload = await JsonSerializer.DeserializeAsync<AuthMeResponse>(
+                stream,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true },
+                cancellationToken: cancellationToken);
+            return (true, payload?.IsProfileComplete == true);
+        }
+        catch
+        {
+            return (false, false);
+        }
+    }
+
+    private sealed class AuthMeResponse
+    {
+        public bool IsProfileComplete { get; set; }
     }
 }

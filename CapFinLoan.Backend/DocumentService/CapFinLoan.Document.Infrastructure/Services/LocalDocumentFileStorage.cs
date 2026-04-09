@@ -67,6 +67,31 @@ public sealed class LocalDocumentFileStorage : IDocumentFileStorage
         return Task.CompletedTask;
     }
 
+    public Task<(Stream FileStream, string ContentType)?> GetAsync(string storedFileName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(storedFileName))
+            return Task.FromResult<(Stream, string)?>(null);
+
+        var uploadsRoot = GetUploadsRoot();
+        var fullPath = Path.Combine(uploadsRoot, storedFileName);
+
+        if (!File.Exists(fullPath))
+            return Task.FromResult<(Stream, string)?>(null);
+
+        var ext = Path.GetExtension(storedFileName).ToLowerInvariant();
+        var contentType = ext switch
+        {
+            ".pdf"  => "application/pdf",
+            ".jpg"  => "image/jpeg",
+            ".jpeg" => "image/jpeg",
+            ".png"  => "image/png",
+            _       => "application/octet-stream"
+        };
+
+        Stream stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
+        return Task.FromResult<(Stream, string)?>((stream, contentType));
+    }
+
     private string GetUploadsRoot()
     {
         var relative = (_options.RelativePath ?? "uploads").Trim();

@@ -12,5 +12,7 @@ public interface IAdminDecisionRepository
 
     Task<IReadOnlyList<AdminDecision>> GetByApplicationIdAsync(int applicationId, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<AdminDecision>> GetAllAsync(CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

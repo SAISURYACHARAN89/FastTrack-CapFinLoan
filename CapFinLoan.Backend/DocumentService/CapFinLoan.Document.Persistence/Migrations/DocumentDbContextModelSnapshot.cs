@@ -38,6 +38,11 @@ namespace CapFinLoan.Document.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(255)

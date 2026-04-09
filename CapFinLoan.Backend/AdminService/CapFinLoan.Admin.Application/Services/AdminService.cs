@@ -1,6 +1,8 @@
 using CapFinLoan.Admin.Application.DTOs;
+using CapFinLoan.Admin.Application.Events;
 using CapFinLoan.Admin.Application.Interfaces;
 using CapFinLoan.Admin.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace CapFinLoan.Admin.Application.Services;
 
@@ -22,21 +24,27 @@ public sealed class AdminService
     private readonly IAdminDecisionRepository _decisions;
     private readonly IAdminHistoryRepository _history;
     private readonly IApplicationQueueReader _queue;
+    private readonly IAdminEventPublisher _eventPublisher;
+    private readonly ILogger<AdminService> _logger;
 
     public AdminService(
         IAdminDecisionRepository decisions,
         IAdminHistoryRepository history,
-        IApplicationQueueReader queue)
+        IApplicationQueueReader queue,
+        IAdminEventPublisher eventPublisher,
+        ILogger<AdminService> logger)
     {
         _decisions = decisions;
         _history = history;
         _queue = queue;
+        _eventPublisher = eventPublisher;
+        _logger = logger;
     }
 
-    /// <summary>
-    /// Get queue of all applications (PENDING, SUBMITTED, UNDER_REVIEW, etc.)
-    /// </summary>
-    public async Task<IReadOnlyList<ApplicationQueueDto>> GetQueueAsync(string? bearerToken = null, CancellationToken cancellationToken = default)
+    /// <summary>Get queue of all applications from ApplicationService.</summary>
+    public async Task<IReadOnlyList<ApplicationQueueDto>> GetQueueAsync(
+        string? bearerToken = null,
+        CancellationToken cancellationToken = default)
     {
         var queue = await _queue.GetQueueAsync(bearerToken, cancellationToken);
 
@@ -53,14 +61,16 @@ public sealed class AdminService
     }
 
     /// <summary>
-    /// Make a decision (APPROVED, REJECTED, UNDER_REVIEW) on an application.
-    /// Creates AdminDecision record and ApplicationStatusHistory entry.
+    /// Makes a decision (APPROVED, REJECTED, UNDER_REVIEW).
+    /// 1. Fetches actual current status from ApplicationService (fixes I5).
+    /// 2. Saves AdminDecision + history locally.
+    /// 3. Syncs the new status back to ApplicationService (fixes C2).
     /// </summary>
     public async Task<AdminDecisionDto?> MakeDecisionAsync(
         int applicationId,
         int adminUserId,
         MakeDecisionRequestDto request,
-        string currentStatus,
+        string? bearerToken = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Decision))
@@ -69,6 +79,10 @@ public sealed class AdminService
         var normalizedDecision = request.Decision.Trim().ToUpperInvariant();
         if (!ValidDecisions.Contains(normalizedDecision))
             throw new InvalidOperationException($"Invalid decision. Allowed: {string.Join(", ", ValidDecisions)}");
+
+        // I5: Fetch actual current status instead of hardcoding "SUBMITTED"
+        var currentStatus = await _queue.GetApplicationStatusAsync(applicationId, bearerToken, cancellationToken)
+                            ?? "SUBMITTED";
 
         var decision = new AdminDecision
         {
@@ -84,15 +98,14 @@ public sealed class AdminService
 
         await _decisions.AddAsync(decision, cancellationToken);
 
-        // Record status history transition
-        var newStatus = normalizedDecision;
-        if (newStatus != currentStatus)
+        // Record status history transition locally
+        if (!normalizedDecision.Equals(currentStatus, StringComparison.OrdinalIgnoreCase))
         {
             var history = new ApplicationStatusHistory
             {
                 ApplicationId = applicationId,
                 OldStatus = currentStatus,
-                NewStatus = newStatus,
+                NewStatus = normalizedDecision,
                 Remarks = decision.Remarks,
                 ChangedBy = adminUserId,
                 ChangedAtUtc = DateTime.UtcNow
@@ -103,21 +116,46 @@ public sealed class AdminService
 
         await _decisions.SaveChangesAsync(cancellationToken);
 
+        // C2: Sync the new status back to ApplicationService (non-fatal if it fails)
+        await _queue.UpdateApplicationStatusAsync(
+            applicationId,
+            normalizedDecision,
+            decision.Remarks,
+            bearerToken,
+            cancellationToken);
+
+        try
+        {
+            await _eventPublisher.PublishDecisionMadeAsync(new AdminDecisionMadeEvent
+            {
+                ApplicationId = decision.ApplicationId,
+                AdminUserId = decision.CreatedBy,
+                Decision = decision.Decision,
+                Remarks = decision.Remarks,
+                ApprovedAmount = decision.ApprovedAmount,
+                TenureMonths = decision.TenureMonths,
+                InterestRate = decision.InterestRate,
+                OccurredAtUtc = decision.CreatedAtUtc
+            }, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "RabbitMQ publish failed for admin decision event. ApplicationId: {ApplicationId}", decision.ApplicationId);
+        }
+
         return MapDecisionDto(decision);
     }
 
-    /// <summary>
-    /// Get the latest admin decision for an application.
-    /// </summary>
-    public async Task<AdminDecisionDto?> GetDecisionAsync(int applicationId, CancellationToken cancellationToken = default)
+    /// <summary>Get the latest admin decision for an application.</summary>
+    public async Task<AdminDecisionDto?> GetDecisionAsync(
+        int applicationId,
+        CancellationToken cancellationToken = default)
     {
         var decision = await _decisions.GetLatestByApplicationIdAsync(applicationId, cancellationToken);
         return decision == null ? null : MapDecisionDto(decision);
     }
 
-    /// <summary>
-    /// Get status history timeline for an application.
-    /// </summary>
+    /// <summary>Get status history timeline for an application.</summary>
     public async Task<IReadOnlyList<ApplicationStatusHistoryDto>> GetHistoryAsync(
         int applicationId,
         CancellationToken cancellationToken = default)
@@ -137,12 +175,13 @@ public sealed class AdminService
     }
 
     /// <summary>
-    /// Simulate document verification. In production, this would call DocumentService.
+    /// Verify a document by calling DocumentService via HTTP (fixes I2 stub).
     /// </summary>
     public async Task<bool> VerifyDocumentAsync(
         int documentId,
         int adminUserId,
         VerifyDocumentRequestDto request,
+        string? bearerToken = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Status))
@@ -152,54 +191,64 @@ public sealed class AdminService
         if (normalizedStatus is not ("VERIFIED" or "REJECTED"))
             throw new InvalidOperationException("Document status must be VERIFIED or REJECTED.");
 
-        // TODO: Call DocumentService to update document status
-        // For now, return success - in production this would call the DocumentService HTTP endpoint
-        await Task.Delay(100, cancellationToken); // Simulate async work
-
-        return true;
+        // I2: Actually call DocumentService to update status
+        var success = await _queue.UpdateDocumentStatusAsync(documentId, normalizedStatus, bearerToken, cancellationToken);
+        return success;
     }
 
     /// <summary>
     /// Generate a summary report of all applications.
+    /// Fixes I3: now reads actual data from the AdminDecisions table.
     /// </summary>
-    public async Task<AdminReportSummaryDto> GetReportSummaryAsync(CancellationToken cancellationToken = default)
+    public async Task<AdminReportSummaryDto> GetReportSummaryAsync(
+        string? bearerToken = null,
+        CancellationToken cancellationToken = default)
     {
-        var queue = await _queue.GetQueueAsync(null, cancellationToken);
+        var queue = await _queue.GetQueueAsync(bearerToken, cancellationToken);
 
-        var approvedDecisions = new HashSet<int>();
-        var rejectedDecisions = new HashSet<int>();
-        var underReviewDecisions = new HashSet<int>();
+        // I3: Read actual decisions from our local DB (no longer an empty list)
+        var allDecisions = await _decisions.GetAllAsync(cancellationToken);
 
-        var allDecisions = new List<AdminDecision>();
+        // Build sets of applicationIds per final decision (keep latest decision per application)
+        var latestDecisionPerApp = allDecisions
+            .GroupBy(d => d.ApplicationId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(d => d.CreatedAtUtc).First().Decision);
 
-        // In production, fetch from decisions table; for MVP we use empty list
-        // var allDecisions = await _decisions.GetAllAsync(cancellationToken);
+        var approvedIds = latestDecisionPerApp.Where(kv => kv.Value.Equals("APPROVED", StringComparison.OrdinalIgnoreCase)).Select(kv => kv.Key).ToHashSet();
+        var rejectedIds = latestDecisionPerApp.Where(kv => kv.Value.Equals("REJECTED", StringComparison.OrdinalIgnoreCase)).Select(kv => kv.Key).ToHashSet();
+        var underReviewIds = latestDecisionPerApp.Where(kv => kv.Value.Equals("UNDER_REVIEW", StringComparison.OrdinalIgnoreCase)).Select(kv => kv.Key).ToHashSet();
 
-        foreach (var decision in allDecisions)
-        {
-            if (decision.Decision.Equals("APPROVED", StringComparison.OrdinalIgnoreCase))
-                approvedDecisions.Add(decision.ApplicationId);
-            else if (decision.Decision.Equals("REJECTED", StringComparison.OrdinalIgnoreCase))
-                rejectedDecisions.Add(decision.ApplicationId);
-            else if (decision.Decision.Equals("UNDER_REVIEW", StringComparison.OrdinalIgnoreCase))
-                underReviewDecisions.Add(decision.ApplicationId);
-        }
+        var pendingCount = queue.Count(x => x.Status.Equals("PENDING", StringComparison.OrdinalIgnoreCase));
+        var submittedCount = queue.Count(x => x.Status.Equals("SUBMITTED", StringComparison.OrdinalIgnoreCase));
+        var totalRequestedAmount = queue.Sum(x => x.Amount);
 
-        var pendingApps = queue.Where(x => x.Status.Equals("PENDING", StringComparison.OrdinalIgnoreCase)).ToList();
-        var submittedApps = queue.Where(x => x.Status.Equals("SUBMITTED", StringComparison.OrdinalIgnoreCase)).ToList();
-
-        var approvedAmount = queue
-            .Where(x => approvedDecisions.Contains(x.Id))
+        var approvedTotalAmount = queue
+            .Where(x => approvedIds.Contains(x.Id))
             .Sum(x => x.Amount);
+
+        var totalApplications = queue.Count;
+        var approvedCount = approvedIds.Count;
+        var rejectedCount = rejectedIds.Count;
+        var approvalRatePercent = totalApplications == 0 ? 0m : (approvedCount * 100m) / totalApplications;
+        var rejectionRatePercent = totalApplications == 0 ? 0m : (rejectedCount * 100m) / totalApplications;
+        var averageRequestedAmount = totalApplications == 0 ? 0m : totalRequestedAmount / totalApplications;
+        var averageApprovedAmount = approvedCount == 0 ? 0m : approvedTotalAmount / approvedCount;
 
         return new AdminReportSummaryDto
         {
-            TotalApplications = queue.Count,
-            ApprovedCount = approvedDecisions.Count,
-            RejectedCount = rejectedDecisions.Count,
-            UnderReviewCount = underReviewDecisions.Count,
-            PendingCount = pendingApps.Count + submittedApps.Count,
-            ApprovedTotalAmount = approvedAmount,
+            TotalApplications = totalApplications,
+            ApprovedCount = approvedCount,
+            RejectedCount = rejectedCount,
+            UnderReviewCount = underReviewIds.Count,
+            PendingCount = pendingCount + submittedCount,
+            TotalRequestedAmount = totalRequestedAmount,
+            ApprovedTotalAmount = approvedTotalAmount,
+            AverageRequestedAmount = averageRequestedAmount,
+            AverageApprovedAmount = averageApprovedAmount,
+            ApprovalRatePercent = Math.Round(approvalRatePercent, 2),
+            RejectionRatePercent = Math.Round(rejectionRatePercent, 2),
             GeneratedAtUtc = DateTime.UtcNow
         };
     }

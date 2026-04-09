@@ -9,4 +9,8 @@ public sealed class UploadDocumentDto
 
     [Required]
     public IFormFile? File { get; init; }
+
+    [Required]
+    [MaxLength(50)]
+    public string DocumentType { get; init; } = string.Empty;
 }

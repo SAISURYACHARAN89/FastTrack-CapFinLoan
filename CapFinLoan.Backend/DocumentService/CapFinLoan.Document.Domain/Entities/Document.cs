@@ -33,4 +33,8 @@ public sealed class Document
 
     [Required]
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    [Required]
+    [MaxLength(50)]
+    public string DocumentType { get; set; } = string.Empty;
 }

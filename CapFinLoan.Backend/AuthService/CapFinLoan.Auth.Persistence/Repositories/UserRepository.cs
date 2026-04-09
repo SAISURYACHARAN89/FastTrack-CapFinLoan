@@ -19,6 +19,27 @@ public sealed class UserRepository : IUserRepository
         return _db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Email == normalizedEmail, cancellationToken);
     }
 
+    public Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return _db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
+    public Task<User?> GetByIdForUpdateAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return _db.Users.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<User>> GetByIdsAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+            return Array.Empty<User>();
+
+        return await _db.Users
+            .AsNoTracking()
+            .Where(x => ids.Contains(x.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public Task<User?> GetByEmailForUpdateAsync(string email, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();

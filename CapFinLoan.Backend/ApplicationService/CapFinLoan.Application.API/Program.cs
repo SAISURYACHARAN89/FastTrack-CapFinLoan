@@ -1,4 +1,5 @@
 using System.Text;
+using CapFinLoan.Application.API.Messaging;
 using CapFinLoan.Application.Application.Interfaces;
 using CapFinLoan.Application.Application.Services;
 using CapFinLoan.Application.Persistence;
@@ -9,18 +10,22 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
 
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
-    opt.UseSqlServer(
-        builder.Configuration.GetConnectionString("Default")
-    ));
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
 builder.Services.AddScoped<IApplicationStatusHistoryRepository, ApplicationStatusHistoryRepository>();
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
+builder.Services.AddSingleton<IApplicationEventPublisher, RabbitMqApplicationEventPublisher>();
+builder.Services.AddHostedService<AdminDecisionConsumer>();
 builder.Services.AddScoped<ApplicationService>();
+builder.Services.AddHttpClient("AuthService", client =>
+{
+    var baseUrl = builder.Configuration["Services:Auth:BaseUrl"] ?? "http://localhost:5000";
+    client.BaseAddress = new Uri(baseUrl);
+});
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
@@ -33,7 +38,7 @@ if (string.IsNullOrWhiteSpace(jwtIssuer))
 if (string.IsNullOrWhiteSpace(jwtAudience))
     throw new InvalidOperationException("JWT Audience is not configured (Jwt:Audience).");
 if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
-    throw new InvalidOperationException("JWT Key is too short for HS256. Use at least 32 bytes (256 bits) for Jwt:Key.");
+    throw new InvalidOperationException("JWT Key is too short for HS256. Use at least 32 bytes.");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -53,13 +58,16 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// M6: Global error handling
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 app.UseSwagger();
 app.UseSwaggerUI();
