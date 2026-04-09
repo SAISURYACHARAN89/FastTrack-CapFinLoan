@@ -1,30 +1,130 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../lib/axios';
+import { useAuth } from '../../context/AuthContext';
+import { GoogleAuthButton } from '../../components/auth/GoogleAuthButton';
 
 export function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpVerificationToken, setOtpVerificationToken] = useState('');
+  const [isOtpRequested, setIsOtpRequested] = useState(false);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+  const { login } = useAuth();
   const navigate = useNavigate();
+
+  const resetOtpState = () => {
+    setOtp('');
+    setOtpVerificationToken('');
+    setIsOtpRequested(false);
+    setIsOtpVerified(false);
+  };
+
+  const handleRequestOtp = async () => {
+    setError('');
+    setSuccess('');
+
+    if (!email.trim()) {
+      setError('Please enter your email before requesting OTP.');
+      return;
+    }
+
+    setIsSendingOtp(true);
+
+    try {
+      await api.post('/auth/signup/request-otp', { email });
+      setIsOtpRequested(true);
+      setIsOtpVerified(false);
+      setOtpVerificationToken('');
+      setSuccess('OTP sent to your email. Please verify to continue signup.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.detail || err.response?.data?.title || 'Failed to send OTP');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setError('');
+    setSuccess('');
+
+    if (!email.trim()) {
+      setError('Please enter your email first.');
+      return;
+    }
+
+    if (!otp.trim()) {
+      setError('Please enter the OTP sent to your email.');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+
+    try {
+      const response = await api.post('/auth/signup/verify-otp', { email, otp });
+      setOtpVerificationToken(response.data.verificationToken);
+      setIsOtpVerified(true);
+      setSuccess('Email verified successfully. You can now create your account.');
+    } catch (err: any) {
+      setIsOtpVerified(false);
+      setOtpVerificationToken('');
+      setError(err.response?.data?.message || err.response?.data?.detail || err.response?.data?.title || 'Invalid or expired OTP');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    if (!isOtpVerified || !otpVerificationToken) {
+      setError('Please verify OTP before signing up.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await api.post('/auth/signup', { name, email, password });
+      await api.post('/auth/signup', { name, email, password, otpVerificationToken });
       setSuccess('Account created successfully! Please sign in.');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.response?.data?.title || 'Registration failed');
+      setError(err.response?.data?.message || err.response?.data?.detail || err.response?.data?.title || 'Registration failed');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (idToken: string) => {
+    setError('');
+    setSuccess('');
+    setIsGoogleLoading(true);
+
+    try {
+      const response = await api.post('/auth/google', { idToken });
+      const { token } = response.data;
+
+      login(token, {
+        userId: response.data.userId,
+        name: response.data.name,
+        email: response.data.email,
+        role: response.data.role
+      });
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.title || 'Google authentication failed');
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -79,8 +179,7 @@ export function Signup() {
                   Full Name
                 </label>
                 <input 
-                  className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-4 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-body font-medium" 
-                  placeholder="John Doe" 
+                  className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-body font-medium" 
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -93,22 +192,55 @@ export function Signup() {
                   Corporate Email
                 </label>
                 <input 
-                  className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-4 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-body font-medium" 
-                  placeholder="name@enterprise.com" 
+                  className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-body font-medium" 
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    resetOtpState();
+                  }}
                   required
                 />
               </div>
+
+              <button
+                className="w-full border border-outline-variant/40 text-on-surface font-headline font-bold py-3 rounded-xl hover:bg-surface-container-low transition-all duration-200 disabled:opacity-60"
+                type="button"
+                onClick={handleRequestOtp}
+                disabled={isSendingOtp || !email.trim()}
+              >
+                {isSendingOtp ? 'Sending OTP...' : isOtpRequested ? 'Resend OTP' : 'Send OTP'}
+              </button>
+
+              {isOtpRequested && (
+                <div className="space-y-3">
+                  <input
+                    className="w-full text-on-surface focus:outline-none font-body font-medium text-center text-lg tracking-widest"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    required
+                  />
+
+                  <button
+                    className="w-full border border-secondary/50 text-secondary font-headline font-bold py-3 rounded-xl hover:bg-secondary/10 transition-all duration-200 disabled:opacity-60"
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={isVerifyingOtp || otp.trim().length !== 6}
+                  >
+                    {isVerifyingOtp ? 'Verifying OTP...' : isOtpVerified ? 'OTP Verified' : 'Verify OTP'}
+                  </button>
+                </div>
+              )}
 
               <div className="relative group">
                 <label className="absolute -top-2.5 left-4 px-1 bg-[#1c212e] text-xs font-label font-bold text-primary tracking-wide transition-all">
                   Password
                 </label>
                 <input 
-                  className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-4 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-body font-medium" 
-                  placeholder="••••••••••••" 
+                  className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-body font-medium" 
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -120,14 +252,30 @@ export function Signup() {
               <button 
                 className="w-full bg-primary-container text-on-primary-fixed flex items-center justify-center gap-2 font-headline font-bold py-4 rounded-xl shadow-lg shadow-primary-container/20 hover:shadow-primary-container/40 hover:translate-y-[-1px] active:scale-[0.98] transition-all duration-200" 
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !isOtpVerified}
               >
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-on-primary-fixed border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  'Sign Up'
+                  isOtpVerified ? 'Sign Up' : 'Verify OTP to Continue'
                 )}
               </button>
+
+              <div className="flex items-center gap-3 py-1">
+                <div className="h-px flex-1 bg-outline-variant/30" />
+                <span className="text-[11px] font-label tracking-wider uppercase text-outline">or</span>
+                <div className="h-px flex-1 bg-outline-variant/30" />
+              </div>
+
+              {isGoogleLoading && (
+                <div className="text-center text-xs text-on-surface-variant">Signing in with Google...</div>
+              )}
+
+              <GoogleAuthButton
+                clientId={googleClientId}
+                mode="signup"
+                onCredential={handleGoogleCredential}
+              />
             </form>
 
             <div className="mt-10 pt-8 border-t border-white/5">

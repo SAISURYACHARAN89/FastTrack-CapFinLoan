@@ -173,15 +173,33 @@ All requests must go through the gateway (port 5021):
 #### AuthService
 
 ```sh
+curl -X POST http://localhost:5021/gateway/auth/signup/request-otp \
+  -H "Content-Type: application/json" \
+  -d '{"email":"testuser@example.com"}'
+```
+
+```sh
+curl -X POST http://localhost:5021/gateway/auth/signup/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{"email":"testuser@example.com","otp":"123456"}'
+```
+
+```sh
 curl -X POST http://localhost:5021/gateway/auth/signup \
   -H "Content-Type: application/json" \
-  -d '{"name":"Test User","email":"testuser@example.com","phone":"1234567890","password":"YourStrongPassword123!"}'
+  -d '{"name":"Test User","email":"testuser@example.com","password":"YourStrongPassword123!","otpVerificationToken":"<token-from-verify-otp>"}'
 ```
 
 ```sh
 curl -X POST http://localhost:5021/gateway/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"testuser@example.com","password":"YourStrongPassword123!"}'
+```
+
+```sh
+curl -X POST http://localhost:5021/gateway/auth/google \
+  -H "Content-Type: application/json" \
+  -d '{"idToken":"<google-id-token-from-frontend>"}'
 ```
 
 #### ApplicationService
@@ -214,7 +232,8 @@ See the full list of endpoint test commands in the project documentation or abov
 
 **What’s implemented**
 
-- Signup + Login
+- Email OTP verified Signup + Login
+- Google OAuth Sign In / Sign Up (single Google ID token endpoint)
 - Password hashing using BCrypt
 - JWT token issued on login
 - JWT validation middleware + `[Authorize]` support
@@ -229,8 +248,11 @@ See the full list of endpoint test commands in the project documentation or abov
 
 **Endpoints**
 
+- `POST /auth/signup/request-otp`
+- `POST /auth/signup/verify-otp` → returns short-lived `VerificationToken`
 - `POST /auth/signup`
 - `POST /auth/login` → returns JWT
+- `POST /auth/google` → verifies Google ID token and returns JWT (creates applicant if user does not exist)
 - `GET /auth/me` → get current authenticated user profile (includes `IsProfileComplete`)
 - `PUT /auth/profile` → update applicant profile fields required for loan application (including annual income and profile photo)
 - `GET /auth/users/identifiers?ids=1&ids=2` → admin-only bulk lookup for applicant identifiers (name/mobile/bank)
@@ -550,4 +572,3 @@ Response: (204 No Content)
 - File upload: must be **Form** type, not JSON
 
 ---
-

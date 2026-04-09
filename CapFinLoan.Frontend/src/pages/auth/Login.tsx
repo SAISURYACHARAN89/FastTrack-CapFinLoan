@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/axios';
+import { GoogleAuthButton } from '../../components/auth/GoogleAuthButton';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -9,6 +10,8 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   
   const { login } = useAuth();
 
@@ -32,6 +35,27 @@ export function Login() {
       setError(err.response?.data?.title || 'Invalid credentials');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (idToken: string) => {
+    setError('');
+    setIsGoogleLoading(true);
+
+    try {
+      const response = await api.post('/auth/google', { idToken });
+      const { token } = response.data;
+
+      login(token, {
+        userId: response.data.userId,
+        name: response.data.name,
+        email: response.data.email,
+        role: response.data.role
+      });
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.title || 'Google authentication failed');
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -161,6 +185,22 @@ export function Login() {
                   'Secure Login'
                 )}
               </button>
+
+              <div className="flex items-center gap-3 py-1">
+                <div className="h-px flex-1 bg-outline-variant/30" />
+                <span className="text-[11px] font-label tracking-wider uppercase text-outline">or</span>
+                <div className="h-px flex-1 bg-outline-variant/30" />
+              </div>
+
+              {isGoogleLoading && (
+                <div className="text-center text-xs text-on-surface-variant">Signing in with Google...</div>
+              )}
+
+              <GoogleAuthButton
+                clientId={googleClientId}
+                mode="signin"
+                onCredential={handleGoogleCredential}
+              />
             </form>
 
             <div className="mt-10 pt-8 border-t border-white/5">

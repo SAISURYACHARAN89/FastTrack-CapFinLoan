@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using CapFinLoan.Auth.Application.Services;
 using CapFinLoan.Auth.Application.DTOs;
 using CapFinLoan.Auth.Application.Exceptions;
+using CapFinLoan.Auth.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -12,10 +13,29 @@ namespace CapFinLoan.Auth.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly AuthService _service;
+    private readonly ISignupOtpService _signupOtp;
 
-    public AuthController(AuthService service)
+    public AuthController(AuthService service, ISignupOtpService signupOtp)
     {
         _service = service;
+        _signupOtp = signupOtp;
+    }
+
+    [HttpPost("signup/request-otp")]
+    public async Task<IActionResult> RequestSignupOtp([FromBody] RequestSignupOtpDto dto, CancellationToken cancellationToken)
+    {
+        await _signupOtp.RequestOtpAsync(dto.Email, cancellationToken);
+        return Ok(new { message = "OTP sent to email if it is eligible for signup." });
+    }
+
+    [HttpPost("signup/verify-otp")]
+    public async Task<ActionResult<SignupOtpVerificationDto>> VerifySignupOtp([FromBody] VerifySignupOtpDto dto, CancellationToken cancellationToken)
+    {
+        var verification = await _signupOtp.VerifyOtpAsync(dto.Email, dto.Otp, cancellationToken);
+        if (verification == null)
+            return BadRequest(new { message = "Invalid or expired OTP." });
+
+        return Ok(verification);
     }
 
     [HttpPost("signup")]
@@ -30,6 +50,10 @@ public class AuthController : ControllerBase
         {
             return Conflict(new { message = ex.Message });
         }
+        catch (InvalidSignupOtpVerificationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("login")]
@@ -39,6 +63,16 @@ public class AuthController : ControllerBase
 
         if (auth == null)
             return Unauthorized();
+
+        return Ok(auth);
+    }
+
+    [HttpPost("google")]
+    public async Task<ActionResult<AuthResponseDto>> GoogleAuth([FromBody] GoogleAuthDto dto, CancellationToken cancellationToken)
+    {
+        var auth = await _service.GoogleAuthenticateAsync(dto.IdToken, cancellationToken);
+        if (auth == null)
+            return Unauthorized(new { message = "Google authentication failed." });
 
         return Ok(auth);
     }

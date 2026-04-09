@@ -15,4 +15,7 @@ public class SignupDto
     [Required]
     [MinLength(8)]
     public string Password { get; set; } = "";
+
+    [Required]
+    public string OtpVerificationToken { get; set; } = "";
 }

@@ -9,10 +9,34 @@
             "AuthenticationOptions": { "AuthenticationProviderKey": "" }
         },
         {
+            "DownstreamPathTemplate": "/auth/google",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5000 }],
+            "UpstreamPathTemplate": "/gateway/auth/google",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "" }
+        },
+        {
             "DownstreamPathTemplate": "/auth/signup",
             "DownstreamScheme": "http",
             "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5000 }],
             "UpstreamPathTemplate": "/gateway/auth/signup",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "" }
+        },
+        {
+            "DownstreamPathTemplate": "/auth/signup/request-otp",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5000 }],
+            "UpstreamPathTemplate": "/gateway/auth/signup/request-otp",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "" }
+        },
+        {
+            "DownstreamPathTemplate": "/auth/signup/verify-otp",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5000 }],
+            "UpstreamPathTemplate": "/gateway/auth/signup/verify-otp",
             "UpstreamHttpMethod": [ "POST" ],
             "AuthenticationOptions": { "AuthenticationProviderKey": "" }
         },

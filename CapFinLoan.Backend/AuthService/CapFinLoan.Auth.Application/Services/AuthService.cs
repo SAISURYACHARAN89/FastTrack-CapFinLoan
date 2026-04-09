@@ -12,16 +12,28 @@ public class AuthService
 
     private readonly IUserRepository _users;
     private readonly IJwtService _jwt;
+    private readonly ISignupOtpService _signupOtp;
+    private readonly IGoogleTokenValidator _googleTokenValidator;
 
-    public AuthService(IUserRepository users, IJwtService jwt)
+    public AuthService(
+        IUserRepository users,
+        IJwtService jwt,
+        ISignupOtpService signupOtp,
+        IGoogleTokenValidator googleTokenValidator)
     {
         _users = users;
         _jwt = jwt;
+        _signupOtp = signupOtp;
+        _googleTokenValidator = googleTokenValidator;
     }
 
     public async Task<UserDto> SignupAsync(SignupDto dto, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+
+        var otpVerified = _signupOtp.ConsumeVerificationToken(normalizedEmail, dto.OtpVerificationToken);
+        if (!otpVerified)
+            throw new InvalidSignupOtpVerificationException();
 
         var existing = await _users.GetByEmailAsync(normalizedEmail, cancellationToken);
         if (existing != null)
@@ -66,6 +78,48 @@ public class AuthService
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password, workFactor: PasswordWorkFactor);
             await _users.SaveChangesAsync(cancellationToken);
         }
+
+        var (token, expiresAtUtc) = _jwt.CreateToken(user);
+
+        return new AuthResponseDto
+        {
+            Token = token,
+            ExpiresAtUtc = expiresAtUtc,
+            UserId = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Role = user.Role
+        };
+    }
+
+    public async Task<AuthResponseDto?> GoogleAuthenticateAsync(string idToken, CancellationToken cancellationToken = default)
+    {
+        var googleUser = await _googleTokenValidator.ValidateIdTokenAsync(idToken, cancellationToken);
+        if (googleUser == null)
+            return null;
+
+        var normalizedEmail = googleUser.Email.Trim().ToLowerInvariant();
+        var user = await _users.GetByEmailForUpdateAsync(normalizedEmail, cancellationToken);
+
+        if (user == null)
+        {
+            user = new User
+            {
+                Name = string.IsNullOrWhiteSpace(googleUser.Name)
+                    ? normalizedEmail.Split('@')[0]
+                    : googleUser.Name.Trim(),
+                Email = normalizedEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N"), workFactor: PasswordWorkFactor),
+                Role = "APPLICANT",
+                IsActive = true
+            };
+
+            await _users.AddAsync(user, cancellationToken);
+            await _users.SaveChangesAsync(cancellationToken);
+        }
+
+        if (!user.IsActive)
+            return null;
 
         var (token, expiresAtUtc) = _jwt.CreateToken(user);
 
