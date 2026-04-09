@@ -551,12 +551,3 @@ Response: (204 No Content)
 
 ---
 
-## Not Implemented Yet
-
-The following services/features are planned but not implemented yet:
-
-- **API Gateway** (Ocelot) routing (`/gateway/...`)
-- **Full lifecycle flows** (email notifications on status change)
-- **Document verification UI** (admin review/UI integration)
-- **Application callbacks** (webhooks on status change)
-- **Report export** (CSV/Excel exports)
