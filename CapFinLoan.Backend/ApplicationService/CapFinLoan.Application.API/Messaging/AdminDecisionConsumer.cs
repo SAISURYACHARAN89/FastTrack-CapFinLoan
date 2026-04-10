@@ -111,6 +111,7 @@ public sealed class AdminDecisionConsumer : BackgroundService
 
             using var scope = _scopeFactory.CreateScope();
             var applicationService = scope.ServiceProvider.GetRequiredService<ApplicationService>();
+            var sagaCoordinator = scope.ServiceProvider.GetRequiredService<ApplicationSubmissionSagaCoordinator>();
             var existing = await applicationService.GetByIdAsAdminAsync(decisionEvent.ApplicationId);
 
             if (existing == null)
@@ -121,6 +122,9 @@ public sealed class AdminDecisionConsumer : BackgroundService
 
             if (string.Equals(existing.Status, decisionEvent.Decision, StringComparison.OrdinalIgnoreCase))
             {
+                await sagaCoordinator.CompleteByAdminDecisionAsync(
+                    decisionEvent.ApplicationId,
+                    decisionEvent.Decision);
                 _channel.BasicAck(eventArgs.DeliveryTag, false);
                 return;
             }
@@ -129,6 +133,10 @@ public sealed class AdminDecisionConsumer : BackgroundService
                 decisionEvent.ApplicationId,
                 decisionEvent.Decision,
                 decisionEvent.Remarks);
+
+            await sagaCoordinator.CompleteByAdminDecisionAsync(
+                decisionEvent.ApplicationId,
+                decisionEvent.Decision);
 
             _channel.BasicAck(eventArgs.DeliveryTag, false);
         }

@@ -1,5 +1,6 @@
 using System.Text;
 using CapFinLoan.Application.API.Messaging;
+using CapFinLoan.Application.API.Middleware;
 using CapFinLoan.Application.Application.Interfaces;
 using CapFinLoan.Application.Application.Services;
 using CapFinLoan.Application.Persistence;
@@ -17,9 +18,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(opt =>
 
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
 builder.Services.AddScoped<IApplicationStatusHistoryRepository, ApplicationStatusHistoryRepository>();
+builder.Services.AddScoped<IApplicationSubmissionSagaRepository, ApplicationSubmissionSagaRepository>();
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
 builder.Services.AddSingleton<IApplicationEventPublisher, RabbitMqApplicationEventPublisher>();
 builder.Services.AddHostedService<AdminDecisionConsumer>();
+builder.Services.AddScoped<IApplicationSubmissionSagaCoordinator, ApplicationSubmissionSagaCoordinator>();
 builder.Services.AddScoped<ApplicationService>();
 builder.Services.AddHttpClient("AuthService", client =>
 {
@@ -66,8 +69,10 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<ApiExceptionMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseSwagger();
 app.UseSwaggerUI();

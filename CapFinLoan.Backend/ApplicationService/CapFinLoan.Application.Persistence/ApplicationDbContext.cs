@@ -12,6 +12,7 @@ public sealed class ApplicationDbContext : DbContext
 
     public DbSet<LoanApplication> LoanApplications => Set<LoanApplication>();
     public DbSet<ApplicationStatusHistory> ApplicationStatusHistories => Set<ApplicationStatusHistory>();
+    public DbSet<ApplicationSubmissionSaga> ApplicationSubmissionSagas => Set<ApplicationSubmissionSaga>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,27 @@ public sealed class ApplicationDbContext : DbContext
             entity.HasIndex(x => x.ApplicationId);
             entity.HasIndex(x => x.UserId);
             entity.HasIndex(x => x.ChangedAtUtc);
+
+            entity.HasOne<LoanApplication>()
+                .WithMany()
+                .HasForeignKey(x => x.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ApplicationSubmissionSaga>(entity =>
+        {
+            entity.Property(x => x.State)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.LastError)
+                .HasMaxLength(1000);
+
+            entity.HasIndex(x => x.ApplicationId)
+                .IsUnique();
+
+            entity.HasIndex(x => x.SagaId)
+                .IsUnique();
 
             entity.HasOne<LoanApplication>()
                 .WithMany()

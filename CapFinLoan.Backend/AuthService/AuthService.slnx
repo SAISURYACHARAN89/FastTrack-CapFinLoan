@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="CapFinLoan.Auth.API/CapFinLoan.Auth.API.csproj" />
+  <Project Path="CapFinLoan.Auth.Application.Tests/CapFinLoan.Auth.Application.Tests.csproj" />
   <Project Path="CapFinLoan.Auth.Application/CapFinLoan.Auth.Application.csproj" />
   <Project Path="CapFinLoan.Auth.Domain/CapFinLoan.Auth.Domain.csproj" />
   <Project Path="CapFinLoan.Auth.Infrastructure/CapFinLoan.Auth.Infrastructure.csproj" />

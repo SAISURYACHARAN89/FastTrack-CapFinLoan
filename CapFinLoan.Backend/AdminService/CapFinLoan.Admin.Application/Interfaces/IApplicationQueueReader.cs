@@ -11,6 +11,13 @@ public class ApplicationQueueSummary
     public int DocumentCount { get; set; }
 }
 
+public class ApplicantContactSummary
+{
+    public int UserId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}
+
 /// <summary>
 /// Interface to communicate with ApplicationService and DocumentService via HTTP.
 /// </summary>
@@ -22,6 +29,8 @@ public interface IApplicationQueueReader
     Task<ApplicationQueueSummary?> GetApplicationAsync(int applicationId, string? bearerToken = null, CancellationToken cancellationToken = default);
 
     Task<int> GetApplicationDocumentCountAsync(int applicationId, string? bearerToken = null, CancellationToken cancellationToken = default);
+
+    Task<ApplicantContactSummary?> GetApplicantContactAsync(int userId, string? bearerToken = null, CancellationToken cancellationToken = default);
 
     /// <summary>Gets the current status string of an application from ApplicationService.</summary>
     Task<string?> GetApplicationStatusAsync(int applicationId, string? bearerToken = null, CancellationToken cancellationToken = default);

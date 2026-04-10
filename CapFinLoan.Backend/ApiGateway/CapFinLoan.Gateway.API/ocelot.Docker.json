@@ -67,138 +67,206 @@
     {
       "DownstreamPathTemplate": "/applications",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "application-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "application-api", "Port": 8080 },
+        { "Host": "application-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/applications",
       "UpstreamHttpMethod": ["GET", "POST"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/applications/my",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "application-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "application-api", "Port": 8080 },
+        { "Host": "application-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/applications/my",
       "UpstreamHttpMethod": ["GET"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/applications/queue",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "application-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "application-api", "Port": 8080 },
+        { "Host": "application-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/applications/queue",
       "UpstreamHttpMethod": ["GET"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/applications/{id}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "application-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "application-api", "Port": 8080 },
+        { "Host": "application-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/applications/{id}",
       "UpstreamHttpMethod": ["GET", "PUT", "DELETE"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/applications/{id}/submit",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "application-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "application-api", "Port": 8080 },
+        { "Host": "application-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/applications/{id}/submit",
       "UpstreamHttpMethod": ["POST"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/applications/{id}/timeline",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "application-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "application-api", "Port": 8080 },
+        { "Host": "application-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/applications/{id}/timeline",
       "UpstreamHttpMethod": ["GET"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/applications/{id}/status",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "application-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "application-api", "Port": 8080 },
+        { "Host": "application-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/applications/{id}/status",
       "UpstreamHttpMethod": ["POST"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/documents/upload",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "document-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "document-api", "Port": 8080 },
+        { "Host": "document-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/documents/upload",
       "UpstreamHttpMethod": ["POST"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/documents/{id}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "document-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "document-api", "Port": 8080 },
+        { "Host": "document-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/documents/{id}",
       "UpstreamHttpMethod": ["GET", "PUT", "DELETE"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/documents/{id}/download",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "document-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "document-api", "Port": 8080 },
+        { "Host": "document-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/documents/{id}/download",
       "UpstreamHttpMethod": ["GET"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/documents/{id}/verify-status",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "document-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "document-api", "Port": 8080 },
+        { "Host": "document-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/documents/{id}/verify-status",
       "UpstreamHttpMethod": ["PUT"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/documents/application/{applicationId}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "document-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "document-api", "Port": 8080 },
+        { "Host": "document-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/documents/application/{applicationId}",
       "UpstreamHttpMethod": ["GET"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/admin/applications",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "admin-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "admin-api", "Port": 8080 },
+        { "Host": "admin-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/admin/applications",
       "UpstreamHttpMethod": ["GET"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/admin/applications/{id}/decision",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "admin-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "admin-api", "Port": 8080 },
+        { "Host": "admin-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/admin/applications/{id}/decision",
       "UpstreamHttpMethod": ["POST"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/admin/applications/{id}/history",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "admin-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "admin-api", "Port": 8080 },
+        { "Host": "admin-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/admin/applications/{id}/history",
       "UpstreamHttpMethod": ["GET"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/admin/documents/{id}/verify",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "admin-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "admin-api", "Port": 8080 },
+        { "Host": "admin-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/admin/documents/{id}/verify",
       "UpstreamHttpMethod": ["PUT"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     },
     {
       "DownstreamPathTemplate": "/admin/reports/summary",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "admin-api", "Port": 8080 }],
+      "DownstreamHostAndPorts": [
+        { "Host": "admin-api", "Port": 8080 },
+        { "Host": "admin-api", "Port": 8080 }
+      ],
       "UpstreamPathTemplate": "/gateway/admin/reports/summary",
       "UpstreamHttpMethod": ["GET"],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] },
+      "LoadBalancerOptions": { "Type": "LeastConnection" }
     }
   ],
   "GlobalConfiguration": {

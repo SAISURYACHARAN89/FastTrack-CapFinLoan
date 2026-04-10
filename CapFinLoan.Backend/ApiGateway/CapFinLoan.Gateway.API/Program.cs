@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using CapFinLoan.Gateway.API.Middleware;
 using Microsoft.IdentityModel.Tokens;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
@@ -73,16 +74,8 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 
 app.UseCors("AllowFrontend");
-
-// Request logging middleware
-app.Use(async (context, next) =>
-{
-    var logger = context.RequestServices
-        .GetRequiredService<ILoggerFactory>()
-        .CreateLogger("GatewayLogger");
-    logger.LogInformation("Incoming request: {Method} {Path}", context.Request.Method, context.Request.Path);
-    await next.Invoke();
-});
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseSwagger();
 app.UseSwaggerUI();

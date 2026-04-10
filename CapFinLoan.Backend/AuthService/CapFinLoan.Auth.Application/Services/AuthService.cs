@@ -168,6 +168,7 @@ public class AuthService
             {
                 UserId = u.Id,
                 Name = u.Name,
+                Email = u.Email,
                 MobileNumber = u.MobileNumber,
                 BankName = u.BankName,
                 EmploymentStatus = u.EmploymentStatus

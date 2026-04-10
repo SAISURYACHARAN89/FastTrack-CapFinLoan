@@ -19,7 +19,6 @@ services:
     build:
       context: ./CapFinLoan.Backend
       dockerfile: ApplicationService/CapFinLoan.Application.API/Dockerfile
-    container_name: capfin-application-api
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -43,14 +42,14 @@ services:
       RabbitMq__AdminDecisionQueue: application.admin.decision.queue
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    ports:
-      - "5001:8080"
+    # No ports exposed; accessed via internal Docker network
+    deploy:
+      replicas: 2
 
   document-api:
     build:
       context: ./CapFinLoan.Backend
       dockerfile: DocumentService/CapFinLoan.Document.API/Dockerfile
-    container_name: capfin-document-api
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Default: Server=host.docker.internal,1433;Database=CapFinLoanDocument;User Id=sa;Password=Password@123;TrustServerCertificate=True
@@ -66,16 +65,16 @@ services:
       RabbitMq__ExchangeName: capfinloan.events
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    ports:
-      - "5002:8080"
+    # No ports exposed; accessed via internal Docker network
     volumes:
       - capfin_document_uploads:/app/uploads
+    deploy:
+      replicas: 2
 
   admin-api:
     build:
       context: ./CapFinLoan.Backend
       dockerfile: AdminService/CapFinLoan.Admin.API/Dockerfile
-    container_name: capfin-admin-api
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -91,6 +90,16 @@ services:
       Jwt__Audience: CapFinLoan.Client
       ServiceUrls__ApplicationService: http://application-api:8080
       ServiceUrls__DocumentService: http://document-api:8080
+      ServiceUrls__AuthService: http://auth-api:8080
+      Smtp__Host: smtp.gmail.com
+      Smtp__Port: 587
+      Smtp__EnableSsl: true
+      Smtp__UserName: psaisuryacharan@gmail.com
+      Smtp__Password: pnkh azmw lquq psfc
+      Smtp__FromEmail: psaisuryacharan@gmail.com
+      Smtp__FromName: CapFinLoan
+      DecisionEmail__SubjectTemplate: "CapFinLoan Application #{ApplicationId} - {Decision}"
+      DecisionEmail__SupportEmail: support@capfinloan.local
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
       RabbitMq__UserName: guest
@@ -102,8 +111,9 @@ services:
       RabbitMq__AdminDecisionMadeRoutingKey: admin.decision.made
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    ports:
-      - "5003:8080"
+    # No ports exposed; accessed via internal Docker network
+    deploy:
+      replicas: 2
 
   gateway-api:
     build:

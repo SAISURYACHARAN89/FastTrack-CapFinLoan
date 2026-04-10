@@ -1,4 +1,5 @@
 using CapFinLoan.Document.Application.DTOs;
+using CapFinLoan.Document.Application.Exceptions;
 using CapFinLoan.Document.Application.Events;
 using CapFinLoan.Document.Application.Interfaces;
 using DocumentEntity = CapFinLoan.Document.Domain.Entities.Document;
@@ -45,16 +46,16 @@ public sealed class DocumentService
         CancellationToken cancellationToken = default)
     {
         if (fileSize <= 0)
-            throw new InvalidOperationException("File is empty.");
+            throw new DocumentValidationException("File is empty.");
 
         if (fileSize > MaxFileSizeBytes)
-            throw new InvalidOperationException("File is too large. Max allowed size is 5MB.");
+            throw new DocumentValidationException("File is too large. Max allowed size is 5MB.");
 
         if (!AllowedContentTypes.Contains(contentType))
-            throw new InvalidOperationException("Unsupported file type. Allowed: pdf, jpg, png.");
+            throw new DocumentValidationException("Unsupported file type. Allowed: pdf, jpg, png.");
 
         if (string.IsNullOrWhiteSpace(documentType))
-            throw new InvalidOperationException("DocumentType is required (e.g., 'PAN', 'ITR').");
+            throw new DocumentValidationException("DocumentType is required (e.g., 'PAN', 'ITR').");
 
         var storedFileName = await _storage.SaveAsync(fileStream, fileName, contentType, cancellationToken);
 
@@ -106,13 +107,13 @@ public sealed class DocumentService
         CancellationToken cancellationToken = default)
     {
         if (fileSize <= 0)
-            throw new InvalidOperationException("File is empty.");
+            throw new DocumentValidationException("File is empty.");
 
         if (fileSize > MaxFileSizeBytes)
-            throw new InvalidOperationException("File is too large. Max allowed size is 5MB.");
+            throw new DocumentValidationException("File is too large. Max allowed size is 5MB.");
 
         if (!AllowedContentTypes.Contains(contentType))
-            throw new InvalidOperationException("Unsupported file type. Allowed: pdf, jpg, png.");
+            throw new DocumentValidationException("Unsupported file type. Allowed: pdf, jpg, png.");
 
         var doc = await _documents.GetByIdForUserForUpdateAsync(id, userId, cancellationToken);
         if (doc == null)
@@ -212,7 +213,7 @@ public sealed class DocumentService
     {
         var normalizedStatus = (status ?? string.Empty).Trim().ToUpperInvariant();
         if (!ValidVerifyStatuses.Contains(normalizedStatus))
-            throw new InvalidOperationException("Status must be VERIFIED or REJECTED.");
+            throw new DocumentValidationException("Status must be VERIFIED or REJECTED.");
 
         var doc = await _documents.GetByIdForUpdateAsync(documentId, cancellationToken);
         if (doc == null)

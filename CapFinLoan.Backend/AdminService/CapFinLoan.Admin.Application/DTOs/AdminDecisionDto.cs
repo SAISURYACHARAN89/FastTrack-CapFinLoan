@@ -9,6 +9,7 @@ public class AdminDecisionDto
     public decimal ApprovedAmount { get; set; }
     public int TenureMonths { get; set; }
     public decimal InterestRate { get; set; }
+    public DateTime CreatedAt { get; set; }
     public int CreatedBy { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }

@@ -1,4 +1,5 @@
 using CapFinLoan.Application.Application.DTOs;
+using CapFinLoan.Application.Application.Exceptions;
 using CapFinLoan.Application.Application.Events;
 using CapFinLoan.Application.Application.Interfaces;
 using CapFinLoan.Application.Domain.Entities;
@@ -12,17 +13,20 @@ namespace CapFinLoan.Application.Application.Services
         private readonly IApplicationRepository _applications;
         private readonly IApplicationStatusHistoryRepository _history;
         private readonly IApplicationEventPublisher _eventPublisher;
+        private readonly IApplicationSubmissionSagaCoordinator _sagaCoordinator;
         private readonly ILogger<ApplicationService> _logger;
 
         public ApplicationService(
             IApplicationRepository applications,
             IApplicationStatusHistoryRepository history,
             IApplicationEventPublisher eventPublisher,
+            IApplicationSubmissionSagaCoordinator sagaCoordinator,
             ILogger<ApplicationService> logger)
         {
             _applications = applications;
             _history = history;
             _eventPublisher = eventPublisher;
+            _sagaCoordinator = sagaCoordinator;
             _logger = logger;
         }
 
@@ -34,6 +38,8 @@ namespace CapFinLoan.Application.Application.Services
 
         public async Task<ApplicationDto> CreateAsync(int userId, CreateApplicationDto dto, CancellationToken cancellationToken = default)
         {
+            _logger.LogInformation("Creating loan application for UserId {UserId}. Amount: {Amount}, TenureMonths: {TenureMonths}", userId, dto.Amount, dto.TenureMonths);
+
             var application = new LoanApplication
             {
                 UserId = userId,
@@ -56,6 +62,8 @@ namespace CapFinLoan.Application.Application.Services
 
             await _history.SaveChangesAsync(cancellationToken);
 
+            _logger.LogInformation("Loan application {ApplicationId} created for UserId {UserId}.", application.Id, userId);
+
             return Map(application);
         }
 
@@ -67,6 +75,8 @@ namespace CapFinLoan.Application.Application.Services
 
         public async Task<ApplicationDto?> UpdateAsync(int userId, int id, CreateApplicationDto dto, CancellationToken cancellationToken = default)
         {
+            _logger.LogInformation("Updating loan application {ApplicationId} for UserId {UserId}.", id, userId);
+
             var entity = await _applications.GetByIdForUserForUpdateAsync(id, userId, cancellationToken);
             if (entity == null)
                 return null;
@@ -75,17 +85,20 @@ namespace CapFinLoan.Application.Application.Services
                 || string.Equals(entity.Status, "REJECTED", StringComparison.Ordinal);
 
             if (!canEdit)
-                throw new InvalidOperationException("Only PENDING or REJECTED applications can be updated.");
+                throw new ApplicationValidationException("Only PENDING or REJECTED applications can be updated.");
 
             entity.Amount = dto.Amount;
             entity.TenureMonths = dto.TenureMonths;
 
             await _applications.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Loan application {ApplicationId} updated for UserId {UserId}.", id, userId);
             return Map(entity);
         }
 
         public async Task<ApplicationDto?> SubmitAsync(int userId, int id, CancellationToken cancellationToken = default)
         {
+            _logger.LogInformation("Submitting loan application {ApplicationId} for UserId {UserId}.", id, userId);
+
             var entity = await _applications.GetByIdForUserForUpdateAsync(id, userId, cancellationToken);
             if (entity == null)
                 return null;
@@ -94,7 +107,7 @@ namespace CapFinLoan.Application.Application.Services
                 || string.Equals(entity.Status, "REJECTED", StringComparison.Ordinal);
 
             if (!canSubmit)
-                throw new InvalidOperationException("Only PENDING or REJECTED applications can be submitted.");
+                throw new ApplicationValidationException("Only PENDING or REJECTED applications can be submitted.");
 
             var previousStatus = entity.Status;
             var wasRejected = string.Equals(entity.Status, "REJECTED", StringComparison.Ordinal);
@@ -114,6 +127,7 @@ namespace CapFinLoan.Application.Application.Services
             }, cancellationToken);
 
             await _applications.SaveChangesAsync(cancellationToken);
+            await _sagaCoordinator.StartSubmissionSagaAsync(entity.Id, userId, cancellationToken);
 
             try
             {
@@ -127,10 +141,21 @@ namespace CapFinLoan.Application.Application.Services
                     NewStatus = entity.Status,
                     OccurredAtUtc = DateTime.UtcNow
                 }, cancellationToken);
+
+                await _sagaCoordinator.MarkSubmissionEventPublishedAsync(entity.Id, cancellationToken);
+                _logger.LogInformation("Loan application {ApplicationId} submitted and event published.", entity.Id);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "RabbitMQ publish failed for application submit event. ApplicationId: {ApplicationId}", entity.Id);
+                await _sagaCoordinator.CompensateSubmissionFailureAsync(
+                    entity.Id,
+                    previousStatus,
+                    "Failed to publish application.submitted event to message broker.",
+                    cancellationToken);
+
+                entity.Status = previousStatus;
+                _logger.LogWarning("Loan application {ApplicationId} submit compensation applied. Restored status {Status}.", entity.Id, previousStatus);
             }
 
             return Map(entity);
@@ -155,13 +180,15 @@ namespace CapFinLoan.Application.Application.Services
 
         public async Task<ApplicationDto?> SetStatusAsAdminAsync(int applicationId, string status, string? reason, CancellationToken cancellationToken = default)
         {
+            _logger.LogInformation("Admin status update requested for ApplicationId {ApplicationId}. RequestedStatus: {Status}", applicationId, status);
+
             var entity = await _applications.GetByIdForUpdateAsync(applicationId, cancellationToken);
             if (entity == null)
                 return null;
 
             var normalizedStatus = (status ?? string.Empty).Trim().ToUpperInvariant();
             if (normalizedStatus is not ("UNDER_REVIEW" or "APPROVED" or "REJECTED"))
-                throw new InvalidOperationException("Unsupported status. Allowed: UNDER_REVIEW, APPROVED, REJECTED.");
+                throw new ApplicationValidationException("Unsupported status. Allowed: UNDER_REVIEW, APPROVED, REJECTED.");
 
             entity.Status = normalizedStatus;
 
@@ -186,6 +213,7 @@ namespace CapFinLoan.Application.Application.Services
             }, cancellationToken);
 
             await _applications.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("ApplicationId {ApplicationId} status updated to {Status} by admin flow.", applicationId, normalizedStatus);
             return Map(entity);
         }
 

@@ -59,6 +59,58 @@ namespace CapFinLoan.Application.Persistence.Migrations
                     b.ToTable("ApplicationStatusHistories");
                 });
 
+            modelBuilder.Entity("CapFinLoan.Application.Domain.Entities.ApplicationSubmissionSaga", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ApplicationId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsCompensated")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("SagaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId")
+                        .IsUnique();
+
+                    b.HasIndex("SagaId")
+                        .IsUnique();
+
+                    b.ToTable("ApplicationSubmissionSagas");
+                });
+
             modelBuilder.Entity("CapFinLoan.Application.Domain.Entities.LoanApplication", b =>
                 {
                     b.Property<int>("Id")
@@ -103,6 +155,15 @@ namespace CapFinLoan.Application.Persistence.Migrations
                 });
 
             modelBuilder.Entity("CapFinLoan.Application.Domain.Entities.ApplicationStatusHistory", b =>
+                {
+                    b.HasOne("CapFinLoan.Application.Domain.Entities.LoanApplication", null)
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CapFinLoan.Application.Domain.Entities.ApplicationSubmissionSaga", b =>
                 {
                     b.HasOne("CapFinLoan.Application.Domain.Entities.LoanApplication", null)
                         .WithMany()

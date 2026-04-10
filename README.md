@@ -11,6 +11,9 @@ This repo contains a production-grade microservices backend with:
 - **SQL Server + EF Core Code-First**
 - **RabbitMQ event bus** for async inter-service events
 - **JWT Authentication & Role-based Authorization**
+- **Custom validation exceptions** across services for consistent business-rule errors
+- **Centralized exception-to-HTTP middleware** with consistent JSON error payloads across APIs
+- **Centralized structured logging** for request/response lifecycle, business events, and exceptions
 
 ### Microservices & Gateway
 
@@ -133,6 +136,7 @@ Open 5 terminals and run:
 
 # ApplicationService (port 5001)
 - Make decisions (APPROVED / REJECTED / UNDER_REVIEW)
+- Send applicant email notification on final admin decisions (APPROVED/REJECTED)
 
 # DocumentService (port 5002)
 - Track decision history with full audit trail
@@ -233,6 +237,7 @@ See the full list of endpoint test commands in the project documentation or abov
 **What’s implemented**
 
 - Email OTP verified Signup + Login
+- OTP email sent with branded CapFinLoan HTML template and project sender name/subject
 - Google OAuth Sign In / Sign Up (single Google ID token endpoint)
 - Password hashing using BCrypt
 - JWT token issued on login
@@ -255,7 +260,7 @@ See the full list of endpoint test commands in the project documentation or abov
 - `POST /auth/google` → verifies Google ID token and returns JWT (creates applicant if user does not exist)
 - `GET /auth/me` → get current authenticated user profile (includes `IsProfileComplete`)
 - `PUT /auth/profile` → update applicant profile fields required for loan application (including annual income and profile photo)
-- `GET /auth/users/identifiers?ids=1&ids=2` → admin-only bulk lookup for applicant identifiers (name/mobile/bank)
+- `GET /auth/users/identifiers?ids=1&ids=2` → admin-only bulk lookup for applicant identifiers (name/email/mobile/bank)
 
 ### 2) ApplicationService (Loan Application/Core) — Completed (MVP)
 
@@ -264,6 +269,11 @@ See the full list of endpoint test commands in the project documentation or abov
 - Create loan application (default `Status = "PENDING"`) — blocked until applicant profile setup is complete
 - Update my `PENDING` or `REJECTED` application
 - Submit my `PENDING` or `REJECTED` application (`Status` → `SUBMITTED`)
+- Saga orchestration for submission lifecycle:
+  - Starts saga on submit
+  - Marks saga as awaiting admin decision after publish success
+  - Compensates submit (restores previous status) if `application.submitted` event publish fails
+  - Completes saga on admin APPROVED/REJECTED decision event consumption
 - Track application status timeline (owner-only)
 - Admin decision/status updates (role `ADMIN`)
 - Get application by id (owner-only)
@@ -281,7 +291,7 @@ See the full list of endpoint test commands in the project documentation or abov
 **Database**
 
 - SQL Server DB: `CapFinLoanApplication`
-- Tables: `LoanApplications`, `ApplicationStatusHistories`
+- Tables: `LoanApplications`, `ApplicationStatusHistories`, `ApplicationSubmissionSagas`
 
 **Endpoints**
 

@@ -22,16 +22,9 @@ public sealed class AdminController : ControllerBase
     [HttpGet("applications")]
     public async Task<ActionResult<IReadOnlyList<ApplicationQueueDto>>> GetQueue(CancellationToken cancellationToken)
     {
-        try
-        {
-            var bearerToken = GetBearerToken();
-            var queue = await _service.GetQueueAsync(bearerToken, cancellationToken);
-            return Ok(queue);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var bearerToken = GetBearerToken();
+        var queue = await _service.GetQueueAsync(bearerToken, cancellationToken);
+        return Ok(queue);
     }
 
     /// <summary>
@@ -48,20 +41,9 @@ public sealed class AdminController : ControllerBase
         if (!TryGetAdminUserId(out var adminUserId))
             return Unauthorized();
 
-        try
-        {
-            var bearerToken = GetBearerToken();
-            var decision = await _service.MakeDecisionAsync(id, adminUserId, request, bearerToken, cancellationToken);
-            return Ok(decision);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var bearerToken = GetBearerToken();
+        var decision = await _service.MakeDecisionAsync(id, adminUserId, request, bearerToken, cancellationToken);
+        return Ok(decision);
     }
 
     /// <summary>Get status history (timeline) for an application.</summary>
@@ -70,15 +52,8 @@ public sealed class AdminController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var history = await _service.GetHistoryAsync(id, cancellationToken);
-            return Ok(history);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var history = await _service.GetHistoryAsync(id, cancellationToken);
+        return Ok(history);
     }
 
     /// <summary>Verify a document (VERIFIED or REJECTED) — calls DocumentService via HTTP.</summary>
@@ -91,38 +66,20 @@ public sealed class AdminController : ControllerBase
         if (!TryGetAdminUserId(out var adminUserId))
             return Unauthorized();
 
-        try
-        {
-            var bearerToken = GetBearerToken();
-            var verified = await _service.VerifyDocumentAsync(id, adminUserId, request, bearerToken, cancellationToken);
-            return verified
-                ? Ok(new { message = "Document verified." })
-                : BadRequest(new { message = "DocumentService returned an error. Verify the document ID and status." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var bearerToken = GetBearerToken();
+        var verified = await _service.VerifyDocumentAsync(id, adminUserId, request, bearerToken, cancellationToken);
+        return verified
+            ? Ok(new { message = "Document verified." })
+            : BadRequest(new { message = "DocumentService returned an error. Verify the document ID and status." });
     }
 
     /// <summary>Generate admin report summary (counts, totals, etc.)</summary>
     [HttpGet("reports/summary")]
     public async Task<ActionResult<AdminReportSummaryDto>> GetReportSummary(CancellationToken cancellationToken)
     {
-        try
-        {
-            var bearerToken = GetBearerToken();
-            var report = await _service.GetReportSummaryAsync(bearerToken, cancellationToken);
-            return Ok(report);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var bearerToken = GetBearerToken();
+        var report = await _service.GetReportSummaryAsync(bearerToken, cancellationToken);
+        return Ok(report);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 using System.Text;
+using CapFinLoan.Document.API.Middleware;
 using CapFinLoan.Document.API.Messaging;
 using CapFinLoan.Document.Application.Interfaces;
 using CapFinLoan.Document.Application.Services;
@@ -64,8 +65,10 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<ApiExceptionMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseSwagger();
 app.UseSwaggerUI();

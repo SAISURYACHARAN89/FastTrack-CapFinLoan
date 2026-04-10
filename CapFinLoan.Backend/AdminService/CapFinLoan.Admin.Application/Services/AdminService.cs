@@ -1,4 +1,5 @@
 using CapFinLoan.Admin.Application.DTOs;
+using CapFinLoan.Admin.Application.Exceptions;
 using CapFinLoan.Admin.Application.Events;
 using CapFinLoan.Admin.Application.Interfaces;
 using CapFinLoan.Admin.Domain.Entities;
@@ -25,6 +26,7 @@ public sealed class AdminService
     private readonly IAdminHistoryRepository _history;
     private readonly IApplicationQueueReader _queue;
     private readonly IAdminEventPublisher _eventPublisher;
+    private readonly IApplicantDecisionEmailSender _emailSender;
     private readonly ILogger<AdminService> _logger;
 
     public AdminService(
@@ -32,12 +34,14 @@ public sealed class AdminService
         IAdminHistoryRepository history,
         IApplicationQueueReader queue,
         IAdminEventPublisher eventPublisher,
+        IApplicantDecisionEmailSender emailSender,
         ILogger<AdminService> logger)
     {
         _decisions = decisions;
         _history = history;
         _queue = queue;
         _eventPublisher = eventPublisher;
+        _emailSender = emailSender;
         _logger = logger;
     }
 
@@ -74,11 +78,11 @@ public sealed class AdminService
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Decision))
-            throw new InvalidOperationException("Decision is required.");
+            throw new AdminValidationException("Decision is required.");
 
         var normalizedDecision = request.Decision.Trim().ToUpperInvariant();
         if (!ValidDecisions.Contains(normalizedDecision))
-            throw new InvalidOperationException($"Invalid decision. Allowed: {string.Join(", ", ValidDecisions)}");
+            throw new AdminValidationException($"Invalid decision. Allowed: {string.Join(", ", ValidDecisions)}");
 
         // I5: Fetch actual current status instead of hardcoding "SUBMITTED"
         var currentStatus = await _queue.GetApplicationStatusAsync(applicationId, bearerToken, cancellationToken)
@@ -116,31 +120,30 @@ public sealed class AdminService
 
         await _decisions.SaveChangesAsync(cancellationToken);
 
-        // C2: Sync the new status back to ApplicationService (non-fatal if it fails)
-        await _queue.UpdateApplicationStatusAsync(
-            applicationId,
-            normalizedDecision,
-            decision.Remarks,
-            bearerToken,
-            cancellationToken);
+        // C2: Sync status back to ApplicationService
+        await _queue.UpdateApplicationStatusAsync(applicationId, normalizedDecision, decision.Remarks, bearerToken, cancellationToken);
 
-        try
+        if (FinalDecisions.Contains(normalizedDecision))
         {
-            await _eventPublisher.PublishDecisionMadeAsync(new AdminDecisionMadeEvent
+            var decisionEvent = new AdminDecisionMadeEvent
             {
-                ApplicationId = decision.ApplicationId,
-                AdminUserId = decision.CreatedBy,
-                Decision = decision.Decision,
+                ApplicationId = applicationId,
+                AdminUserId = adminUserId,
+                Decision = normalizedDecision,
                 Remarks = decision.Remarks,
                 ApprovedAmount = decision.ApprovedAmount,
                 TenureMonths = decision.TenureMonths,
-                InterestRate = decision.InterestRate,
-                OccurredAtUtc = decision.CreatedAtUtc
-            }, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "RabbitMQ publish failed for admin decision event. ApplicationId: {ApplicationId}", decision.ApplicationId);
+                InterestRate = decision.InterestRate
+            };
+
+            await _eventPublisher.PublishDecisionMadeAsync(decisionEvent, cancellationToken);
+
+            await TryNotifyApplicantByEmailAsync(
+                applicationId,
+                normalizedDecision,
+                decision.Remarks,
+                bearerToken,
+                cancellationToken);
         }
 
         return MapDecisionDto(decision);
@@ -185,11 +188,11 @@ public sealed class AdminService
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Status))
-            throw new InvalidOperationException("Document status is required.");
+            throw new AdminValidationException("Document status is required.");
 
         var normalizedStatus = request.Status.Trim().ToUpperInvariant();
         if (normalizedStatus is not ("VERIFIED" or "REJECTED"))
-            throw new InvalidOperationException("Document status must be VERIFIED or REJECTED.");
+            throw new AdminValidationException("Document status must be VERIFIED or REJECTED.");
 
         // I2: Actually call DocumentService to update status
         var success = await _queue.UpdateDocumentStatusAsync(documentId, normalizedStatus, bearerToken, cancellationToken);
@@ -253,6 +256,50 @@ public sealed class AdminService
         };
     }
 
+    private async Task TryNotifyApplicantByEmailAsync(
+        int applicationId,
+        string decision,
+        string? remarks,
+        string? bearerToken,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var application = await _queue.GetApplicationAsync(applicationId, bearerToken, cancellationToken);
+            if (application == null)
+            {
+                _logger.LogWarning(
+                    "Skipping applicant decision email because application {ApplicationId} was not found via ApplicationService.",
+                    applicationId);
+                return;
+            }
+
+            var applicant = await _queue.GetApplicantContactAsync(application.UserId, bearerToken, cancellationToken);
+            if (applicant == null || string.IsNullOrWhiteSpace(applicant.Email))
+            {
+                _logger.LogWarning(
+                    "Skipping applicant decision email for application {ApplicationId}. Applicant contact missing for user {UserId}.",
+                    applicationId,
+                    application.UserId);
+                return;
+            }
+
+            await _emailSender.SendDecisionEmailAsync(
+                applicant.Email,
+                applicant.Name,
+                applicationId,
+                decision,
+                remarks,
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Failed to send applicant decision email for application {ApplicationId}.",
+                applicationId);
+        }
+    }
+
     private static AdminDecisionDto MapDecisionDto(AdminDecision d) => new()
     {
         Id = d.Id,
@@ -262,6 +309,7 @@ public sealed class AdminService
         ApprovedAmount = d.ApprovedAmount,
         TenureMonths = d.TenureMonths,
         InterestRate = d.InterestRate,
+        CreatedAt = d.CreatedAtUtc,
         CreatedBy = d.CreatedBy,
         CreatedAtUtc = d.CreatedAtUtc
     };

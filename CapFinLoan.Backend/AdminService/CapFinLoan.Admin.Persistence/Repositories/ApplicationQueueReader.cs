@@ -36,6 +36,13 @@ public sealed class ApplicationQueueReader : IApplicationQueueReader
         return client;
     }
 
+    private HttpClient CreateAuthClient(string? bearerToken)
+    {
+        var client = _httpClientFactory.CreateClient("auth");
+        ApplyBearer(client, bearerToken);
+        return client;
+    }
+
     private static void ApplyBearer(HttpClient client, string? bearerToken)
     {
         if (string.IsNullOrWhiteSpace(bearerToken))
@@ -125,6 +132,32 @@ public sealed class ApplicationQueueReader : IApplicationQueueReader
             : 0;
     }
 
+    public async Task<ApplicantContactSummary?> GetApplicantContactAsync(
+        int userId,
+        string? bearerToken = null,
+        CancellationToken cancellationToken = default)
+    {
+        var client = CreateAuthClient(bearerToken);
+        var response = await client.GetAsync($"auth/users/identifiers?ids={userId}", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        var users = await response.Content
+            .ReadFromJsonAsync<List<AuthUserIdentifierDto>>(cancellationToken: cancellationToken)
+            ?? new List<AuthUserIdentifierDto>();
+
+        var match = users.FirstOrDefault(x => x.UserId == userId);
+        if (match == null)
+            return null;
+
+        return new ApplicantContactSummary
+        {
+            UserId = match.UserId,
+            Name = match.Name,
+            Email = match.Email
+        };
+    }
+
     // ── Write operations ──────────────────────────────────────────────────────
 
     /// <summary>
@@ -201,4 +234,11 @@ internal sealed class ApplicationServiceDto
     public int TenureMonths { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+}
+
+internal sealed class AuthUserIdentifierDto
+{
+    public int UserId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
 }

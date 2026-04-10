@@ -1,5 +1,7 @@
 using System.Text;
 using CapFinLoan.Admin.API.Messaging;
+using CapFinLoan.Admin.API.Middleware;
+using CapFinLoan.Admin.API.Notifications;
 using CapFinLoan.Admin.Application.Interfaces;
 using CapFinLoan.Admin.Application.Services;
 using CapFinLoan.Admin.Persistence;
@@ -19,6 +21,9 @@ builder.Services.AddScoped<IAdminDecisionRepository, AdminDecisionRepository>();
 builder.Services.AddScoped<IAdminHistoryRepository, AdminHistoryRepository>();
 builder.Services.AddScoped<IApplicationQueueReader, ApplicationQueueReader>();
 builder.Services.AddSingleton<IAdminEventPublisher, RabbitMqAdminEventPublisher>();
+builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
+builder.Services.Configure<DecisionEmailOptions>(builder.Configuration.GetSection("DecisionEmail"));
+builder.Services.AddScoped<IApplicantDecisionEmailSender, SmtpApplicantDecisionEmailSender>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
 builder.Services.AddHostedService<ApplicationSubmittedConsumer>();
@@ -35,6 +40,11 @@ builder.Services.AddHttpClient("application", c =>
 builder.Services.AddHttpClient("document", c =>
 {
     c.BaseAddress = new Uri(builder.Configuration["ServiceUrls:DocumentService"] ?? "http://localhost:5262");
+});
+
+builder.Services.AddHttpClient("auth", c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["ServiceUrls:AuthService"] ?? "http://localhost:5000");
 });
 
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -76,8 +86,10 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<ApiExceptionMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseSwagger();
 app.UseSwaggerUI();

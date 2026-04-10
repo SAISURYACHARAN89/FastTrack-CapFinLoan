@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using CapFinLoan.Auth.Application.Services;
 using CapFinLoan.Auth.Application.DTOs;
-using CapFinLoan.Auth.Application.Exceptions;
 using CapFinLoan.Auth.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
@@ -41,19 +40,8 @@ public class AuthController : ControllerBase
     [HttpPost("signup")]
     public async Task<ActionResult<UserDto>> Signup([FromBody] SignupDto dto, CancellationToken cancellationToken)
     {
-        try
-        {
-            var user = await _service.SignupAsync(dto, cancellationToken);
-            return Ok(user);
-        }
-        catch (EmailAlreadyExistsException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (InvalidSignupOtpVerificationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var user = await _service.SignupAsync(dto, cancellationToken);
+        return Ok(user);
     }
 
     [HttpPost("login")]

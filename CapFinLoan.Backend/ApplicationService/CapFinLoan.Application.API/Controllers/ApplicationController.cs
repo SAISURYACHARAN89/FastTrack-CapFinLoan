@@ -46,18 +46,11 @@ public sealed class ApplicationController : ControllerBase
     {
         var userId = GetUserId();
 
-        try
-        {
-            var updated = await _service.UpdateAsync(userId, id, dto, cancellationToken);
-            if (updated == null)
-                return NotFound();
+        var updated = await _service.UpdateAsync(userId, id, dto, cancellationToken);
+        if (updated == null)
+            return NotFound();
 
-            return Ok(updated);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        return Ok(updated);
     }
 
     [HttpGet("{id:int}")]
@@ -83,18 +76,11 @@ public sealed class ApplicationController : ControllerBase
     {
         var userId = GetUserId();
 
-        try
-        {
-            var submitted = await _service.SubmitAsync(userId, id, cancellationToken);
-            if (submitted == null)
-                return NotFound();
+        var submitted = await _service.SubmitAsync(userId, id, cancellationToken);
+        if (submitted == null)
+            return NotFound();
 
-            return Ok(submitted);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        return Ok(submitted);
     }
 
     [HttpGet("my")]
@@ -125,15 +111,8 @@ public sealed class ApplicationController : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public async Task<ActionResult<ApplicationDto>> SetStatusAsAdmin([FromRoute] int id, [FromBody] MakeDecisionDto dto, CancellationToken cancellationToken)
     {
-        try
-        {
-            var updated = await _service.SetStatusAsAdminAsync(id, dto.Status, dto.Reason, cancellationToken);
-            return updated == null ? NotFound() : Ok(updated);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        var updated = await _service.SetStatusAsAdminAsync(id, dto.Status, dto.Reason, cancellationToken);
+        return updated == null ? NotFound() : Ok(updated);
     }
 
     private int GetUserId()

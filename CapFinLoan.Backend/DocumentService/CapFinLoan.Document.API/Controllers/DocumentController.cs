@@ -33,27 +33,20 @@ public sealed class DocumentController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.DocumentType))
             return BadRequest(new { message = "DocumentType is required (e.g., 'PAN', 'ITR')." });
 
-        try
-        {
-            await using var stream = dto.File.OpenReadStream();
-            var safeFileName = Path.GetFileName(dto.File.FileName);
+        await using var stream = dto.File.OpenReadStream();
+        var safeFileName = Path.GetFileName(dto.File.FileName);
 
-            var created = await _service.UploadAsync(
-                userId,
-                dto.ApplicationId,
-                safeFileName,
-                dto.File.ContentType,
-                dto.File.Length,
-                dto.DocumentType,
-                stream,
-                cancellationToken);
+        var created = await _service.UploadAsync(
+            userId,
+            dto.ApplicationId,
+            safeFileName,
+            dto.File.ContentType,
+            dto.File.Length,
+            dto.DocumentType,
+            stream,
+            cancellationToken);
 
-            return Ok(created);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        return Ok(created);
     }
 
     [HttpPut("{id:int}")]
@@ -66,26 +59,19 @@ public sealed class DocumentController : ControllerBase
         if (dto.File == null)
             return BadRequest(new { message = "File is required." });
 
-        try
-        {
-            await using var stream = dto.File.OpenReadStream();
-            var safeFileName = Path.GetFileName(dto.File.FileName);
+        await using var stream = dto.File.OpenReadStream();
+        var safeFileName = Path.GetFileName(dto.File.FileName);
 
-            var updated = await _service.ReplaceAsync(
-                userId,
-                id,
-                safeFileName,
-                dto.File.ContentType,
-                dto.File.Length,
-                stream,
-                cancellationToken);
+        var updated = await _service.ReplaceAsync(
+            userId,
+            id,
+            safeFileName,
+            dto.File.ContentType,
+            dto.File.Length,
+            stream,
+            cancellationToken);
 
-            return updated == null ? NotFound() : Ok(updated);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        return updated == null ? NotFound() : Ok(updated);
     }
 
     [HttpGet("application/{applicationId:int}")]
@@ -141,17 +127,10 @@ public sealed class DocumentController : ControllerBase
         [FromBody] VerifyStatusDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var updated = await _service.UpdateStatusAsync(id, dto.Status, cancellationToken);
-            return updated
-                ? Ok(new { message = $"Document {id} status updated to {dto.Status}." })
-                : NotFound(new { message = $"Document {id} not found." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var updated = await _service.UpdateStatusAsync(id, dto.Status, cancellationToken);
+        return updated
+            ? Ok(new { message = $"Document {id} status updated to {dto.Status}." })
+            : NotFound(new { message = $"Document {id} not found." });
     }
 
     private bool TryGetUserId(out int userId)
