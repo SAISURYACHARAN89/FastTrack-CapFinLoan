@@ -121,8 +121,15 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 @layer base {
   body {
-    @apply bg-surface font-body text-on-surface flex min-h-screen w-full;
+    @apply bg-surface font-body text-on-surface flex min-h-screen w-full m-0 p-0;
     transition: background-color 0.3s ease, color 0.3s ease;
+    cursor: none;
+  }
+  body * {
+    cursor: none !important;
+  }
+  #root {
+    @apply flex flex-col flex-1 w-full min-h-screen;
   }
   ::selection {
     background-color: rgba(79, 70, 229, 0.3);

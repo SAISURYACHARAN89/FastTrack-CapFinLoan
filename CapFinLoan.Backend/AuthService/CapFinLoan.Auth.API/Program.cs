@@ -11,7 +11,12 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 
 builder.Services.AddDbContext<AuthDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
@@ -23,7 +28,7 @@ builder.Services.Configure<GoogleAuthOptions>(builder.Configuration.GetSection("
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<ISignupOtpService, SignupOtpService>();
+builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
 builder.Services.AddScoped<AuthService>();
 
@@ -60,6 +65,13 @@ builder.Services
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5021", "http://127.0.0.1:5021")
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
 
 // M6: Global error handling
 builder.Services.AddProblemDetails();
@@ -74,6 +86,7 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 

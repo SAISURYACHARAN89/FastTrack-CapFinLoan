@@ -2,6 +2,11 @@
 
 **Production-grade microservices architecture for loan fintech platform.**
 
+## 📚 Architecture Documentation
+
+- **[High Level Design (HLD)](./HLD.md)** — System overview, architecture diagrams, data flows, deployment
+- **[Low Level Design (LLD)](./LLD.md)** — Class diagrams, database schemas, sequence diagrams, API contracts
+
 ## Current Implementation Status (Backend)
 
 This repo contains a production-grade microservices backend with:
@@ -580,5 +585,11 @@ Response: (204 No Content)
 - Save requests in Collections for reuse
 - Use Environment Variables for token/baseUrl
 - File upload: must be **Form** type, not JSON
+
+### 🚀 Test Updates
+- This section was added to test Claude Code's ability to edit files.
+- Verified that changes are reflected in the local filesystem and VS Code.
+
+---
 
 ---

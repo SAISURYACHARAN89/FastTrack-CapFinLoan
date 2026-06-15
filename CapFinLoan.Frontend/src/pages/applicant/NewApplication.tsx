@@ -71,11 +71,11 @@ export function NewApplication() {
         <div className="absolute bottom-[-5%] left-[-5%] w-[400px] h-[400px] bg-secondary/5 blur-[100px] rounded-full pointer-events-none"></div>
         
         {/* Header Content */}
-        <header className="w-full pb-12 pt-8">
-          <div className="max-w-3xl mx-auto text-center space-y-4">
+        <header className="w-full pb-8 sm:pb-12 pt-4 sm:pt-8">
+          <div className="max-w-3xl mx-auto text-center space-y-3 sm:space-y-4 px-2">
             <span className="inline-block px-4 py-1.5 rounded-full bg-primary-container/20 text-primary text-[10px] font-bold tracking-widest uppercase border border-primary/20">New Application</span>
-            <h2 className="text-5xl font-extrabold font-headline tracking-tighter text-on-surface">Configure Your Capital</h2>
-            <p className="text-on-surface-variant font-body text-lg max-w-xl mx-auto opacity-80">Precision engineering for your next financial milestone. Tailor your liquidity with our premium loan engine.</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline tracking-tighter text-on-surface">Configure Your Capital</h2>
+            <p className="text-on-surface-variant font-body text-base sm:text-lg max-w-xl mx-auto opacity-80">Precision engineering for your next financial milestone.</p>
           </div>
         </header>
 
@@ -102,13 +102,14 @@ export function NewApplication() {
             {/* Loan Amount Section */}
             <div className="space-y-6">
               <div className="flex justify-between items-end">
-                <label className="text-sm font-bold tracking-widest uppercase text-on-surface-variant opacity-60">Loan Amount</label>
+                <label htmlFor="amount-slider" className="text-sm font-bold tracking-widest uppercase text-on-surface-variant opacity-60">Loan Amount</label>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-extrabold font-headline tabular-nums text-on-surface">{formatINR(amount)}</span>
                 </div>
               </div>
               <div className="relative pt-4 pb-2">
                 <input 
+                  id="amount-slider"
                   className="w-full h-1 bg-surface-container-highest appearance-none cursor-pointer accent-primary [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(195,192,255,0.4)]" 
                   max="10000000" 
                   min="500000" 
@@ -127,7 +128,7 @@ export function NewApplication() {
             {/* Tenure Section */}
             <div className="space-y-6">
               <div className="flex justify-between items-end">
-                <label className="text-sm font-bold tracking-widest uppercase text-on-surface-variant opacity-60">Tenure</label>
+                <label htmlFor="tenure-slider" className="text-sm font-bold tracking-widest uppercase text-on-surface-variant opacity-60">Tenure</label>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-extrabold font-headline tabular-nums text-on-surface">{tenure}</span>
                   <span className="text-on-surface-variant text-sm">Months</span>
@@ -135,6 +136,7 @@ export function NewApplication() {
               </div>
               <div className="relative pt-4 pb-2">
                 <input 
+                  id="tenure-slider"
                   className="w-full h-1 bg-surface-container-highest appearance-none cursor-pointer accent-secondary [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(76,215,246,0.4)]" 
                   max="60" 
                   min="12" 
@@ -170,7 +172,7 @@ export function NewApplication() {
             </div>
 
             {/* Detail Bento Mini Grid */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-6 rounded-3xl bg-surface-container-low border border-outline-variant/10">
                 <span className="material-symbols-outlined text-primary mb-3">verified_user</span>
                 <h4 className="text-xs font-bold text-on-surface mb-1">Instant Approval</h4>

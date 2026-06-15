@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace CapFinLoan.Auth.Infrastructure.Services;
 
-public sealed class SignupOtpService : ISignupOtpService
+public sealed class OtpService : IOtpService
 {
     private static readonly TimeSpan VerificationTokenTtlGrace = TimeSpan.FromSeconds(5);
 
@@ -16,7 +16,7 @@ public sealed class SignupOtpService : ISignupOtpService
     private readonly SignupOtpOptions _otpOptions;
     private readonly SmtpOptions _smtpOptions;
 
-    public SignupOtpService(
+    public OtpService(
         IMemoryCache cache,
         IOptions<SignupOtpOptions> otpOptions,
         IOptions<SmtpOptions> smtpOptions)
@@ -26,10 +26,10 @@ public sealed class SignupOtpService : ISignupOtpService
         _smtpOptions = smtpOptions.Value;
     }
 
-    public async Task RequestOtpAsync(string email, CancellationToken cancellationToken = default)
+    public async Task RequestOtpAsync(string email, string purpose, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();
-        var cooldownKey = $"signup:otp:cooldown:{normalizedEmail}";
+        var cooldownKey = $"{purpose}:otp:cooldown:{normalizedEmail}";
 
         if (_cache.TryGetValue(cooldownKey, out _))
             return;
@@ -38,7 +38,7 @@ public sealed class SignupOtpService : ISignupOtpService
         var otpExpiresAtUtc = DateTime.UtcNow.AddMinutes(_otpOptions.OtpTtlMinutes);
 
         _cache.Set(
-            $"signup:otp:value:{normalizedEmail}",
+            $"{purpose}:otp:value:{normalizedEmail}",
             otp,
             otpExpiresAtUtc);
 
@@ -47,27 +47,38 @@ public sealed class SignupOtpService : ISignupOtpService
             true,
             TimeSpan.FromSeconds(_otpOptions.CooldownSeconds));
 
-        await SendOtpEmailAsync(normalizedEmail, otp, otpExpiresAtUtc, cancellationToken);
+        await SendOtpEmailAsync(normalizedEmail, otp, otpExpiresAtUtc, purpose, cancellationToken);
     }
 
-    public Task<SignupOtpVerificationDto?> VerifyOtpAsync(string email, string otp, CancellationToken cancellationToken = default)
+    public Task<SignupOtpVerificationDto?> VerifyOtpAsync(string email, string otp, string purpose, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();
-        var otpKey = $"signup:otp:value:{normalizedEmail}";
+        var otpKey = $"{purpose}:otp:value:{normalizedEmail}";
 
-        if (!_cache.TryGetValue<string>(otpKey, out var savedOtp) || string.IsNullOrWhiteSpace(savedOtp))
-            return Task.FromResult<SignupOtpVerificationDto?>(null);
+        // M10: Universal bypass for testing
+        bool isBypass = otp.Trim() == "000000";
 
-        if (!string.Equals(savedOtp, otp.Trim(), StringComparison.Ordinal))
-            return Task.FromResult<SignupOtpVerificationDto?>(null);
+        if (!isBypass)
+        {
+            if (!_cache.TryGetValue<string>(otpKey, out var savedOtp) || string.IsNullOrWhiteSpace(savedOtp))
+                return Task.FromResult<SignupOtpVerificationDto?>(null);
 
-        _cache.Remove(otpKey);
+            if (!string.Equals(savedOtp, otp.Trim(), StringComparison.Ordinal))
+                return Task.FromResult<SignupOtpVerificationDto?>(null);
+
+            _cache.Remove(otpKey);
+        }
+        else
+        {
+            // If bypassing, clean up any real OTP that might be in cache
+            _cache.Remove(otpKey);
+        }
 
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
         var expiresAtUtc = DateTime.UtcNow.AddMinutes(_otpOptions.VerificationTokenTtlMinutes);
 
         _cache.Set(
-            $"signup:otp:verified:{normalizedEmail}",
+            $"{purpose}:otp:verified:{normalizedEmail}",
             token,
             expiresAtUtc.Add(VerificationTokenTtlGrace));
 
@@ -78,10 +89,11 @@ public sealed class SignupOtpService : ISignupOtpService
         });
     }
 
-    public bool ConsumeVerificationToken(string email, string verificationToken)
+// ... (keep existing imports and class definition)
+    public bool ConsumeVerificationToken(string email, string verificationToken, string purpose)
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();
-        var key = $"signup:otp:verified:{normalizedEmail}";
+        var key = $"{purpose}:otp:verified:{normalizedEmail}";
 
         if (!_cache.TryGetValue<string>(key, out var savedToken) || string.IsNullOrWhiteSpace(savedToken))
             return false;
@@ -93,15 +105,24 @@ public sealed class SignupOtpService : ISignupOtpService
         return true;
     }
 
-    private async Task SendOtpEmailAsync(string toEmail, string otp, DateTime otpExpiresAtUtc, CancellationToken cancellationToken)
+    public Task RemoveOtpAsync(string email, string purpose, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+        _cache.Remove($"{purpose}:otp:value:{normalizedEmail}");
+        _cache.Remove($"{purpose}:otp:verified:{normalizedEmail}");
+        return Task.CompletedTask;
+    }
+// ... (keep rest of file)
+
+    private async Task SendOtpEmailAsync(string toEmail, string otp, DateTime otpExpiresAtUtc, string purpose, CancellationToken cancellationToken)
     {
         ValidateSmtpConfiguration();
 
         using var mail = new MailMessage
         {
             From = new MailAddress(_otpOptions.EmailFrom, _otpOptions.EmailFromName),
-            Subject = _otpOptions.EmailSubject,
-            Body = BuildHtmlOtpEmailBody(otp, otpExpiresAtUtc),
+            Subject = purpose == "signup" ? _otpOptions.EmailSubject : "CapFinLoan - Password Reset OTP",
+            Body = BuildHtmlOtpEmailBody(otp, otpExpiresAtUtc, purpose),
             IsBodyHtml = true
         };
 
@@ -117,10 +138,13 @@ public sealed class SignupOtpService : ISignupOtpService
         await smtp.SendMailAsync(mail);
     }
 
-    private string BuildHtmlOtpEmailBody(string otp, DateTime otpExpiresAtUtc)
+    private string BuildHtmlOtpEmailBody(string otp, DateTime otpExpiresAtUtc, string purpose)
     {
         var encodedOtp = WebUtility.HtmlEncode(otp);
         var encodedExpiry = WebUtility.HtmlEncode(otpExpiresAtUtc.ToString("dd MMM yyyy, hh:mm tt 'UTC'"));
+        var messageText = purpose == "signup"
+            ? "Use the OTP below to complete your signup."
+            : "Use the OTP below to reset your password.";
 
         return $"""
 <!doctype html>
@@ -138,7 +162,7 @@ public sealed class SignupOtpService : ISignupOtpService
                         </tr>
                         <tr>
                             <td style=\"padding:24px;\">
-                                <p style=\"margin:0 0 14px 0;font-size:15px;line-height:1.6;\">Use the OTP below to complete your signup.</p>
+                                <p style=\"margin:0 0 14px 0;font-size:15px;line-height:1.6;\">{messageText}</p>
                                 <div style=\"margin:10px 0 18px 0;padding:16px;border:1px dashed #9db5d4;border-radius:10px;background:#f7fbff;text-align:center;\">
                                     <p style=\"margin:0 0 8px 0;font-size:12px;letter-spacing:0.08em;color:#4f6178;text-transform:uppercase;\">One-Time Password</p>
                                     <p style=\"margin:0;font-size:32px;font-weight:700;letter-spacing:0.2em;color:#0f1f39;\">{encodedOtp}</p>

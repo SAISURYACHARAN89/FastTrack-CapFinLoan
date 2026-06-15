@@ -12,18 +12,18 @@ public class AuthService
 
     private readonly IUserRepository _users;
     private readonly IJwtService _jwt;
-    private readonly ISignupOtpService _signupOtp;
+    private readonly IOtpService _otp;
     private readonly IGoogleTokenValidator _googleTokenValidator;
 
     public AuthService(
         IUserRepository users,
         IJwtService jwt,
-        ISignupOtpService signupOtp,
+        IOtpService otp,
         IGoogleTokenValidator googleTokenValidator)
     {
         _users = users;
         _jwt = jwt;
-        _signupOtp = signupOtp;
+        _otp = otp;
         _googleTokenValidator = googleTokenValidator;
     }
 
@@ -31,7 +31,7 @@ public class AuthService
     {
         var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
 
-        var otpVerified = _signupOtp.ConsumeVerificationToken(normalizedEmail, dto.OtpVerificationToken);
+        var otpVerified = _otp.ConsumeVerificationToken(normalizedEmail, dto.OtpVerificationToken, "signup");
         if (!otpVerified)
             throw new InvalidSignupOtpVerificationException();
 
@@ -174,6 +174,45 @@ public class AuthService
                 EmploymentStatus = u.EmploymentStatus
             })
             .ToArray();
+    }
+
+    public async Task<bool> RequestPasswordResetOtpAsync(ForgotPasswordRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var user = await _users.GetByEmailAsync(normalizedEmail, cancellationToken);
+
+        if (user == null)
+            return false;
+
+        await _otp.RequestOtpAsync(normalizedEmail, "pwreset", cancellationToken);
+        return true;
+    }
+
+    public async Task<SignupOtpVerificationDto?> VerifyPasswordResetOtpAsync(VerifyOtpRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        return await _otp.VerifyOtpAsync(normalizedEmail, request.Otp, "pwreset", cancellationToken);
+    }
+
+    public async Task<bool> ResetPasswordAsync(ResetPasswordDto request, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
+        var verificationValid = _otp.ConsumeVerificationToken(normalizedEmail, request.VerificationToken, "pwreset");
+        if (!verificationValid)
+            return false;
+
+        var user = await _users.GetByEmailForUpdateAsync(normalizedEmail, cancellationToken);
+        if (user == null)
+            return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: PasswordWorkFactor);
+
+        await _users.SaveChangesAsync(cancellationToken);
+
+        await _otp.RemoveOtpAsync(normalizedEmail, "pwreset", cancellationToken);
+
+        return true;
     }
 
     private static UserDto Map(User user)

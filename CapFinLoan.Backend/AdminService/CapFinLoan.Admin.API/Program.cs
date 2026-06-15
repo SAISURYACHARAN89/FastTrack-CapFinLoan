@@ -80,6 +80,13 @@ builder.Services
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5021", "http://127.0.0.1:5021")
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
 
 // M6: Global error handling
 builder.Services.AddProblemDetails();
@@ -94,6 +101,7 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 

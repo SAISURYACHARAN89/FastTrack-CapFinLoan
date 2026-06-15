@@ -1,0 +1,19 @@
+{
+  "info": {
+    "name": "CapFinLoan API",
+    "_postman_id": "capfinloan-collection-v2",
+    "description": "Complete API collection for CapFinLoan microservices. Set environment variables: token, admin_token after login.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_auth",    "value": "http://localhost:5000" },
+    { "key": "base_app",     "value": "http://localhost:5001" },
+    { "key": "base_doc",     "value": "http://localhost:5002" },
+    { "key": "base_admin",   "value": "http://localhost:5003" },
+    { "key": "base_wallet",  "value": "http://localhost:5005" },
+    { "key": "base_gateway", "value": "http://localhost:5021" },
+    { "key": "token",        "value": "" },
+    { "key": "admin_token",  "value": "" }
+  ],
+  "item": []
+}

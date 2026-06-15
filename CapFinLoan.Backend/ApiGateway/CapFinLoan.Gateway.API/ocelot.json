@@ -65,6 +65,30 @@
             "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
         },
         {
+            "DownstreamPathTemplate": "/auth/forgot-password",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5000 }],
+            "UpstreamPathTemplate": "/gateway/auth/forgot-password",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "" }
+        },
+        {
+            "DownstreamPathTemplate": "/auth/verify-reset-otp",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5000 }],
+            "UpstreamPathTemplate": "/gateway/auth/verify-reset-otp",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "" }
+        },
+        {
+            "DownstreamPathTemplate": "/auth/reset-password",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5000 }],
+            "UpstreamPathTemplate": "/gateway/auth/reset-password",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "" }
+        },
+        {
             "DownstreamPathTemplate": "/applications",
             "DownstreamScheme": "http",
             "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5001 }],
@@ -163,7 +187,7 @@
         {
             "DownstreamPathTemplate": "/admin/applications",
             "DownstreamScheme": "http",
-            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5003 }],
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5004 }],
             "UpstreamPathTemplate": "/gateway/admin/applications",
             "UpstreamHttpMethod": [ "GET" ],
             "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
@@ -171,7 +195,7 @@
         {
             "DownstreamPathTemplate": "/admin/applications/{id}/decision",
             "DownstreamScheme": "http",
-            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5003 }],
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5004 }],
             "UpstreamPathTemplate": "/gateway/admin/applications/{id}/decision",
             "UpstreamHttpMethod": [ "POST" ],
             "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
@@ -179,7 +203,7 @@
         {
             "DownstreamPathTemplate": "/admin/applications/{id}/history",
             "DownstreamScheme": "http",
-            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5003 }],
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5004 }],
             "UpstreamPathTemplate": "/gateway/admin/applications/{id}/history",
             "UpstreamHttpMethod": [ "GET" ],
             "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
@@ -187,7 +211,7 @@
         {
             "DownstreamPathTemplate": "/admin/documents/{id}/verify",
             "DownstreamScheme": "http",
-            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5003 }],
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5004 }],
             "UpstreamPathTemplate": "/gateway/admin/documents/{id}/verify",
             "UpstreamHttpMethod": [ "PUT" ],
             "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
@@ -195,9 +219,113 @@
         {
             "DownstreamPathTemplate": "/admin/reports/summary",
             "DownstreamScheme": "http",
-            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5003 }],
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5004 }],
             "UpstreamPathTemplate": "/gateway/admin/reports/summary",
             "UpstreamHttpMethod": [ "GET" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/chat/message",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5001 }],
+            "UpstreamPathTemplate": "/gateway/chat/message",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/wallet",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/wallet",
+            "UpstreamHttpMethod": [ "GET" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/wallet/razorpay/order",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/wallet/razorpay/order",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/wallet/razorpay/verify",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/wallet/razorpay/verify",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/wallet/deduct-fee",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/wallet/deduct-fee",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/wallet/transactions",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/wallet/transactions",
+            "UpstreamHttpMethod": [ "GET" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/wallet/withdraw",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/wallet/withdraw",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/wallet/withdrawals",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/wallet/withdrawals",
+            "UpstreamHttpMethod": [ "GET" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/admin/wallet/summary",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/admin/wallet/summary",
+            "UpstreamHttpMethod": [ "GET" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/admin/wallet/transactions",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/admin/wallet/transactions",
+            "UpstreamHttpMethod": [ "GET" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/admin/wallet/withdrawals",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/admin/wallet/withdrawals",
+            "UpstreamHttpMethod": [ "GET" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/admin/wallet/withdrawals/{id}/review",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/admin/wallet/withdrawals/{id}/review",
+            "UpstreamHttpMethod": [ "POST" ],
+            "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
+        },
+        {
+            "DownstreamPathTemplate": "/admin/wallet/disburse",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5005 }],
+            "UpstreamPathTemplate": "/gateway/admin/wallet/disburse",
+            "UpstreamHttpMethod": [ "POST" ],
             "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer", "AllowedScopes": [] }
         }
     ],

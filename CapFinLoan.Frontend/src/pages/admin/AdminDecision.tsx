@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import api from '../../lib/axios';
+import { adminWalletApi } from '../../services/walletService';
 
 interface Application {
   id: number;
@@ -121,6 +122,18 @@ export function AdminDecision() {
         decision: decisionMode,
         remarks: notes || 'Admin decision applied.',
       });
+
+      // Credit loan amount to user's wallet on approval
+      if (decisionMode === 'APPROVED' && application) {
+        try {
+          await adminWalletApi.disburse(application.userId, application.amount, application.id);
+        } catch (disburseErr) {
+          // Log but don't block — decision is already saved
+          console.error('Wallet disbursement failed:', disburseErr);
+          alert(`Decision saved as APPROVED, but wallet disbursement failed. Please manually credit ₹${application.amount.toLocaleString('en-IN')} to user ${application.userId} from the Payments panel.`);
+        }
+      }
+
       navigate('/admin/dashboard');
     } catch (err) {
       console.error(err);
@@ -242,17 +255,17 @@ export function AdminDecision() {
   return (
     <DashboardLayout>
       <PreviewModal />
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-2">
+      <div className="space-y-5 sm:space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+          <div className="space-y-1 sm:space-y-2">
             <Link
               to="/admin/applications"
               className="inline-flex items-center gap-1.5 text-slate-500 hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest"
             >
               <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              Back To Queue
+              Back
             </Link>
-            <h1 className="text-2xl font-headline font-extrabold text-on-surface tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-headline font-extrabold text-on-surface tracking-tight">
               Application CF-{application.id.toString().padStart(4, '0')}
             </h1>
           </div>

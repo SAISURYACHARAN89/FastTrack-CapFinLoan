@@ -214,7 +214,7 @@ export function ApplicantProfile() {
           </div>
         </section>
 
-        <form onSubmit={onSubmit} className="space-y-6 rounded-2xl border border-white/5 bg-surface-container-low p-6">
+        <form onSubmit={onSubmit} data-testid="profile-form" className="space-y-6 rounded-2xl border border-white/5 bg-surface-container-low p-6">
           {error && <div className="text-sm bg-red-500/10 border border-red-500/20 text-red-300 p-3 rounded-xl">{error}</div>}
           {success && <div className="text-sm bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 p-3 rounded-xl">{success}</div>}
 

@@ -11,7 +11,7 @@ public class AuthServiceTests
 {
     private readonly Mock<IUserRepository> _mockUserRepo;
     private readonly Mock<IJwtService> _mockJwtService;
-    private readonly Mock<ISignupOtpService> _mockSignupOtpService;
+    private readonly Mock<IOtpService> _mockOtpService;
     private readonly Mock<IGoogleTokenValidator> _mockGoogleTokenValidator;
     private readonly AuthService _authService;
 
@@ -19,13 +19,13 @@ public class AuthServiceTests
     {
         _mockUserRepo = new Mock<IUserRepository>();
         _mockJwtService = new Mock<IJwtService>();
-        _mockSignupOtpService = new Mock<ISignupOtpService>();
+        _mockOtpService = new Mock<IOtpService>();
         _mockGoogleTokenValidator = new Mock<IGoogleTokenValidator>();
 
         _authService = new AuthService(
             _mockUserRepo.Object,
             _mockJwtService.Object,
-            _mockSignupOtpService.Object,
+            _mockOtpService.Object,
             _mockGoogleTokenValidator.Object);
     }
 
@@ -41,8 +41,8 @@ public class AuthServiceTests
             OtpVerificationToken = "valid_token"
         };
 
-        _mockSignupOtpService
-            .Setup(s => s.ConsumeVerificationToken(dto.Email.ToLowerInvariant(), dto.OtpVerificationToken))
+        _mockOtpService
+            .Setup(s => s.ConsumeVerificationToken(dto.Email.ToLowerInvariant(), dto.OtpVerificationToken, "signup"))
             .Returns(true);
 
         _mockUserRepo
@@ -82,8 +82,8 @@ public class AuthServiceTests
             OtpVerificationToken = "valid_token"
         };
 
-        _mockSignupOtpService
-            .Setup(s => s.ConsumeVerificationToken(dto.Email.ToLowerInvariant(), dto.OtpVerificationToken))
+        _mockOtpService
+            .Setup(s => s.ConsumeVerificationToken(dto.Email.ToLowerInvariant(), dto.OtpVerificationToken, "signup"))
             .Returns(true);
 
         _mockUserRepo
@@ -106,8 +106,8 @@ public class AuthServiceTests
             OtpVerificationToken = "invalid_token"
         };
 
-        _mockSignupOtpService
-            .Setup(s => s.ConsumeVerificationToken(dto.Email.ToLowerInvariant(), dto.OtpVerificationToken))
+        _mockOtpService
+            .Setup(s => s.ConsumeVerificationToken(dto.Email.ToLowerInvariant(), dto.OtpVerificationToken, "signup"))
             .Returns(false);
 
         // Act & Assert

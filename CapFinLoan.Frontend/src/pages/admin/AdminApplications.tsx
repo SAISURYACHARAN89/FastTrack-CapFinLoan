@@ -87,27 +87,24 @@ export function AdminApplications() {
 
         {/* ── Top bar  (matches Dashboard's search row style) ──*/}
         <div className="flex justify-between items-center w-full">
-          <div className="flex items-center gap-8 flex-1">
+          <div className="flex items-center gap-4 sm:gap-8 flex-1">
             <div className="relative w-full max-w-xl group">
               <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-lg">search</span>
               <input
-                className="w-full bg-surface-container-low border-none rounded-xl py-3 pl-12 pr-16 text-sm text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary/40 transition-all font-body font-medium"
-                placeholder="Search by applicant name or application ref..."
+                className="w-full bg-surface-container-low border-none rounded-xl py-3 pl-12 pr-4 sm:pr-16 text-sm text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary/40 transition-all font-body font-medium"
+                placeholder="Search applicant name or ref..."
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-surface-container-highest rounded border border-outline-variant/30 text-[10px] font-bold text-outline">⌘ K</div>
+              <div className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-surface-container-highest rounded border border-outline-variant/30 text-[10px] font-bold text-outline">⌘ K</div>
             </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="h-8 w-px bg-white/5" />
           </div>
         </div>
 
         <div className="space-y-6">
           {/* ── KPI Strip ─────────────────────────────────────── */}
-          <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             {(['ALL', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'] as const).slice(1).map(f => {
               const count = queue.filter(a => a.status === f).length;
               const c = statusConfig[f];
@@ -132,9 +129,9 @@ export function AdminApplications() {
           </section>
 
           {/* ── Filter Tabs ──────────────────────────────────── */}
-          <div className="flex items-center justify-between gap-8 flex-wrap">
-            <h3 className="text-xl font-headline font-bold text-on-surface">Application Queue</h3>
-            <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <h3 className="text-lg sm:text-xl font-headline font-bold text-on-surface">Application Queue</h3>
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
               {FILTERS.map(f => (
                 <button
                   key={f}

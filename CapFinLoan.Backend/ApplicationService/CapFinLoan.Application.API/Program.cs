@@ -29,6 +29,23 @@ builder.Services.AddHttpClient("AuthService", client =>
     var baseUrl = builder.Configuration["Services:Auth:BaseUrl"] ?? "http://localhost:5000";
     client.BaseAddress = new Uri(baseUrl);
 });
+builder.Services.AddHttpClient<ChatService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(100);
+});
+builder.Services.AddScoped<ChatService>(sp =>
+{
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient(nameof(ChatService));
+    var config = sp.GetRequiredService<IConfiguration>();
+    var repo = sp.GetRequiredService<IApplicationRepository>();
+    var logger = sp.GetRequiredService<ILogger<ChatService>>();
+    var baseUrl = config["Ollama:BaseUrl"] ?? "http://localhost:11434";
+    var model = config["Ollama:Model"] ?? "llama3.2:1b";
+    var authUrl = config["Services:Auth:BaseUrl"] ?? "http://localhost:5000";
+    var docUrl = config["Services:Document:BaseUrl"] ?? "http://localhost:5002";
+    return new ChatService(repo, httpClient, baseUrl, model, authUrl, docUrl, logger);
+});
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];

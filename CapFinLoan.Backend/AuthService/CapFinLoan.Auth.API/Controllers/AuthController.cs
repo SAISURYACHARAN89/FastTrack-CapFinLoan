@@ -12,25 +12,25 @@ namespace CapFinLoan.Auth.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly AuthService _service;
-    private readonly ISignupOtpService _signupOtp;
+    private readonly IOtpService _otp;
 
-    public AuthController(AuthService service, ISignupOtpService signupOtp)
+    public AuthController(AuthService service, IOtpService otp)
     {
         _service = service;
-        _signupOtp = signupOtp;
+        _otp = otp;
     }
 
     [HttpPost("signup/request-otp")]
     public async Task<IActionResult> RequestSignupOtp([FromBody] RequestSignupOtpDto dto, CancellationToken cancellationToken)
     {
-        await _signupOtp.RequestOtpAsync(dto.Email, cancellationToken);
+        await _otp.RequestOtpAsync(dto.Email, "signup", cancellationToken);
         return Ok(new { message = "OTP sent to email if it is eligible for signup." });
     }
 
     [HttpPost("signup/verify-otp")]
     public async Task<ActionResult<SignupOtpVerificationDto>> VerifySignupOtp([FromBody] VerifySignupOtpDto dto, CancellationToken cancellationToken)
     {
-        var verification = await _signupOtp.VerifyOtpAsync(dto.Email, dto.Otp, cancellationToken);
+        var verification = await _otp.VerifyOtpAsync(dto.Email, dto.Otp, "signup", cancellationToken);
         if (verification == null)
             return BadRequest(new { message = "Invalid or expired OTP." });
 
@@ -93,6 +93,36 @@ public class AuthController : ControllerBase
 
         var users = await _service.GetUserIdentifiersAsync(distinctIds, cancellationToken);
         return Ok(users);
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> RequestPasswordReset([FromBody] ForgotPasswordRequestDto dto, CancellationToken cancellationToken)
+    {
+        var result = await _service.RequestPasswordResetOtpAsync(dto, cancellationToken);
+        if (!result)
+            return NotFound(new { message = "User not found." });
+
+        return Ok(new { message = "Password reset OTP sent to email." });
+    }
+
+    [HttpPost("verify-reset-otp")]
+    public async Task<IActionResult> VerifyResetOtp([FromBody] VerifyOtpRequestDto dto, CancellationToken cancellationToken)
+    {
+        var verification = await _service.VerifyPasswordResetOtpAsync(dto, cancellationToken);
+        if (verification == null)
+            return BadRequest(new { message = "Invalid or expired OTP." });
+
+        return Ok(verification);
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto, CancellationToken cancellationToken)
+    {
+        var result = await _service.ResetPasswordAsync(dto, cancellationToken);
+        if (!result)
+            return BadRequest(new { message = "Password reset failed. Please verify OTP again." });
+
+        return Ok(new { message = "Password has been reset successfully." });
     }
 
     private int GetUserId()

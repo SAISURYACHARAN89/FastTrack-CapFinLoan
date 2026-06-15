@@ -66,12 +66,12 @@ export function ApplicantDashboard() {
 
   return (
     <DashboardLayout>
-      <header className="mb-12 flex justify-between items-end">
+      <header className="mb-8 lg:mb-12 flex justify-between items-end">
         <div>
-          <h2 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-headline tracking-tight text-on-surface">
             Good morning, {user?.name.split(' ')[0]}.
           </h2>
-          <p className="text-slate-500 mt-2 font-medium tracking-wide">
+          <p className="text-slate-500 mt-2 font-medium tracking-wide text-sm">
             {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
         </div>
@@ -94,7 +94,7 @@ export function ApplicantDashboard() {
       )}
 
       {/* Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6 mb-8 lg:mb-12">
         {/* 1. Hero Card */}
         <div className="md:col-span-2 relative overflow-hidden rounded-2xl bg-surface-container-low p-8 border border-outline-variant/5 shadow-2xl">
           <div className="absolute bottom-0 right-0 w-full h-1/2 opacity-20 pointer-events-none overflow-hidden">
@@ -151,10 +151,10 @@ export function ApplicantDashboard() {
 
       {/* DataGrid Section */}
       <section className="rounded-2xl bg-surface-container-low border border-outline-variant/5 overflow-hidden shadow-2xl">
-        <div className="px-8 py-6 flex justify-between items-center border-b border-white/5">
-          <h3 className="text-lg font-bold font-headline">Recent Activity</h3>
-          <Link to="/applications" className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
-            View All Archive
+        <div className="px-4 sm:px-8 py-5 flex justify-between items-center border-b border-white/5">
+          <h3 className="text-base lg:text-lg font-bold font-headline">Recent Activity</h3>
+          <Link to="/applications" className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors whitespace-nowrap">
+            View All
           </Link>
         </div>
         
@@ -173,32 +173,33 @@ export function ApplicantDashboard() {
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[11px] uppercase tracking-widest text-slate-500 font-bold bg-surface-container-lowest/50">
-                  <th className="px-8 py-4">App ID</th>
-                  <th className="px-8 py-4">Amount & Tenure</th>
-                  <th className="px-8 py-4">Status</th>
-                  <th className="px-8 py-4">Created Date</th>
-                  <th className="px-8 py-4 text-right">Action</th>
+                  <th className="px-4 sm:px-8 py-4">App ID</th>
+                  <th className="px-4 sm:px-8 py-4">Amount & Tenure</th>
+                  <th className="px-4 sm:px-8 py-4">Status</th>
+                  <th className="hidden md:table-cell px-4 sm:px-8 py-4">Created Date</th>
+                  <th className="px-4 sm:px-8 py-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {apps.slice(0, 5).map(app => (
                   <tr key={app.id} className="hover:bg-white/5 transition-colors group">
-                    <td className="px-8 py-5 text-sm font-medium text-slate-400">#CF-{app.id.toString().padStart(4, '0')}</td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 sm:px-8 py-4 text-sm font-medium text-slate-400 font-mono">#CF-{app.id.toString().padStart(4, '0')}</td>
+                    <td className="px-4 sm:px-8 py-4">
                       <div className="flex flex-col">
                         <span className="text-sm font-black font-headline tabular-nums text-on-surface">{formatINR(app.amount)}</span>
-                        <span className="text-xs text-slate-500">{app.tenureMonths} Months</span>
+                        <span className="text-xs text-slate-500">{app.tenureMonths} mo</span>
                       </div>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 sm:px-8 py-4">
                       {getStatusBadge(app.status)}
                     </td>
-                    <td className="px-8 py-5 text-sm text-slate-500 font-medium">
+                    <td className="hidden md:table-cell px-4 sm:px-8 py-4 text-sm text-slate-500 font-medium">
                       {new Date(app.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="px-8 py-5 text-right">
+                    <td className="px-4 sm:px-8 py-4 text-right">
                       <Link to={`/applications/${app.id}`} className="text-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-1">
-                        View Details <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                        <span className="hidden sm:inline">View</span>
+                        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                       </Link>
                     </td>
                   </tr>

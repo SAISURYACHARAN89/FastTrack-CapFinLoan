@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import api from '../../lib/axios';
+import { walletApi } from '../../services/walletService';
 
 interface Application {
   id: number;
@@ -25,6 +26,7 @@ export function ApplicationDetail() {
   const [application, setApplication] = useState<Application | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [uploadingType, setUploadingType] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,8 +34,12 @@ export function ApplicationDetail() {
   const selectedDocTypeRef = useRef<string>('');
   const editingDocIdRef = useRef<number | null>(null);
 
+  const formatINR = (value: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+
   const fetchDetails = async () => {
     try {
+      setError(false);
       const [appRes, docsRes] = await Promise.all([
         api.get(`/applications/${id}`),
         api.get(`/documents/application/${id}`)
@@ -42,6 +48,7 @@ export function ApplicationDetail() {
       setDocuments(docsRes.data);
     } catch (err) {
       console.error(err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -140,21 +147,53 @@ export function ApplicationDetail() {
   };
 
   const handleSubmitApplication = async () => {
-    if (!window.confirm("Are you sure you want to submit this application for review?")) return;
-    
+    // Step 1 — check wallet balance first
+    let walletBalance = 0;
+    try {
+      const walletRes = await walletApi.getWallet();
+      walletBalance = walletRes.data.availableBalance;
+    } catch {
+      alert('Unable to check wallet balance. Please try again.');
+      return;
+    }
+
+    const APPLICATION_FEE = 500;
+
+    // Step 2 — insufficient balance guard
+    if (walletBalance < APPLICATION_FEE) {
+      alert(
+        `Insufficient wallet balance.\n\nYour balance: ${formatINR(walletBalance)}\nRequired: ${formatINR(APPLICATION_FEE)}\n\nPlease add money to your wallet first.`
+      );
+      return;
+    }
+
+    // Step 3 — confirm with user
+    if (!window.confirm(
+      `₹500 application fee will be deducted from your wallet.\n\nCurrent balance: ${formatINR(walletBalance)}\nAfter deduction: ${formatINR(walletBalance - APPLICATION_FEE)}\n\nProceed?`
+    )) return;
+
     setSubmitting(true);
     try {
+      // Step 4 — deduct fee from wallet FIRST
+      await walletApi.deductApplicationFee(Number(id));
+
+      // Step 5 — submit the application
       await api.post(`/applications/${id}/submit`);
       await fetchDetails();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      alert('Failed to submit application.');
+      const msg =
+        err instanceof Error
+          ? err.message
+          : (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+            ?? 'Failed to submit application.';
+      alert(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading || !application) {
+  if (loading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center p-20">
@@ -164,13 +203,24 @@ export function ApplicationDetail() {
     );
   }
 
+  if (error || !application) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center p-20 gap-4">
+          <span className="material-symbols-outlined text-6xl text-slate-600">error_outline</span>
+          <p className="text-slate-400 font-semibold text-lg">Application not found.</p>
+          <p className="text-slate-500 text-sm">The application you are looking for does not exist or you don't have access.</p>
+          <Link to="/applications" className="mt-4 px-6 py-2 bg-primary rounded-full text-white font-bold hover:bg-primary/80 transition-all">
+            Back to My Applications
+          </Link>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   const interestRate = 11.45;
   const monthlyRate = interestRate / 100 / 12;
   const emi = (application.amount * monthlyRate * Math.pow(1 + monthlyRate, application.tenureMonths)) / (Math.pow(1 + monthlyRate, application.tenureMonths) - 1);
-
-  const formatINR = (value: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
-  };
 
   // Helper to infer document type from filename
   const inferDocumentType = (doc: Document): string => {
@@ -195,7 +245,7 @@ export function ApplicationDetail() {
 
   return (
     <DashboardLayout>
-      <header className="sticky top-0 z-30 bg-surface/60 backdrop-blur-xl flex justify-between items-center px-4 py-6 w-full mb-8">
+      <header className="sticky top-0 z-30 bg-surface/60 backdrop-blur-xl flex justify-between items-center px-3 sm:px-4 py-4 sm:py-6 w-full mb-6 lg:mb-8">
         <div className="flex items-center gap-4">
           <nav className="flex items-center text-xs font-medium tracking-wide">
             <Link to="/applications" className="text-slate-500 hover:text-indigo-400">Applications</Link>
@@ -212,12 +262,12 @@ export function ApplicationDetail() {
           <section className="space-y-4">
             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500">Requested Capital</p>
             <div className="flex flex-col md:flex-row md:items-end gap-2">
-              <h2 className="text-6xl md:text-7xl font-headline font-extrabold tabular-nums text-on-surface tracking-tighter">
+              <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-headline font-extrabold tabular-nums text-on-surface tracking-tighter">
                 {formatINR(application.amount)}
               </h2>
-              <span className="text-indigo-400 font-bold text-xl mb-3">INR</span>
+              <span className="text-indigo-400 font-bold text-lg md:text-xl mb-0 md:mb-3">INR</span>
             </div>
-            <div className="flex flex-wrap gap-4 mt-8">
+            <div className="flex flex-wrap gap-3 mt-4 sm:mt-8">
               <span className="px-4 py-2 rounded-full bg-surface-container-high text-xs font-bold border border-white/5 flex items-center gap-2">
                 <span className="material-symbols-outlined text-indigo-400 text-sm">payments</span>
                 Working Capital
@@ -230,7 +280,7 @@ export function ApplicationDetail() {
           </section>
 
           {/* Status Stepper */}
-          <section className="bg-surface-container-low rounded-3xl p-10 border border-white/5 relative overflow-hidden">
+          <section className="bg-surface-container-low rounded-3xl p-6 sm:p-10 border border-white/5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] pointer-events-none"></div>
             <h3 className="text-sm font-bold text-slate-400 mb-8 uppercase tracking-widest">Application Progress</h3>
             
